@@ -243,10 +243,10 @@ We've quoted what we're confident Karpathy said publicly, with dates and links. 
 
 ## Roadmap
 
-- **v0.0.3** *(now)* — Multi-tenant auth, 4 providers exposed (Claude / Gemini / Qwen-Code / OpenCode), ttyd terminal. Linux verified, Mac native + Windows-via-WSL paths documented.
+- **v0.0.4** *(current)* — Multi-tenant auth, 4 providers (Claude / Gemini / Qwen-Code / OpenCode), ttyd terminal, **vendored OmniGraph brain pipeline** (`bin/informed-vibe brain {init,compile,status,daemon}`). Linux verified; Mac native + Windows-via-WSL.
+- **v0.0.5** — Publish standalone OmniGraph as a separate package (`@informedvibe/omnigraph` or PyPI equivalent). The vendored copy stays as the install-friendly default; the standalone enables interop with Cursor / Continue / Cline / other readers, restoring the substrate-vs-UX boundary captured in the original distribution plan.
 - **v0.1** — Rust PTY sidecar (replaces ttyd; native cross-platform PTY).
 - **v0.2** — Native Tauri desktop bundles.
-- **v0.3** — First-party brain integration via OmniGraph OSS.
 - **v0.x** — Per-user PTY bridge: your CLI binary on your laptop, the host orchestrates. Zero-trust multi-founder.
 
 ---

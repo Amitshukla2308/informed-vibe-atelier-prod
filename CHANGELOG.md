@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Roadmap decisions
+
+- **Distribution shape (hybrid).** The v0.0.4 vendoring of OmniGraph at `omnigraph/` stays as the install-friendly default for first-run founders. A separate standalone OmniGraph package is planned for v0.0.5, restoring the substrate-vs-UX boundary captured in the Apr-30 / May-2 distribution plans and enabling interop with Cursor / Continue / Cline / other readers against the same `og_artifacts/` contract. Both shapes coexist intentionally — vendored gets you running fast; standalone gets you interop. This decision re-ratifies the post-leak-containment vendoring as a deliberate choice rather than an accident.
+- **Power C (Brain visualization) retired from the roadmap.** The original Apr-25 OmniGraph ROADMAP listed three powers — A: boot-prompt injection, B: Domain Brain drafts, C: Brain visualization (Personal Brain view, React Three Fiber, HyperRetrieval-backed query). Powers A and B are shipped (B partially — writer side vendored, the Approvals/viability-verdict reader UX is still Phase B work in PLAN.md). **Power C was implicitly dropped during the v0.0.4 trim** (`src/viz` + `src/hr` removed from the vendored OmniGraph). This release retires Power C from the public roadmap so docs match reality. Brain visualization can resurface as a separate project against the `og_artifacts/` contract if value materializes; it is not coming back as part of v0.x of Informed Vibe Atelier.
+
+### Security
+
+- **Git history scrub.** A LAN IP (`192.168.88.2:1234`, an LM Studio default the maintainer's machine had hardcoded into the OmniGraph Qwen-Code adapter) was removed from all of `informed-vibe-atelier-prod`'s git history via `git filter-repo --replace-text`. Working tree, all commits, and all release tags now contain the generic `localhost:1234` placeholder. v0.0.1 / v0.0.2 / v0.0.3 commit SHAs unchanged; v0.0.4 commit SHA rewritten from `2f8b1a7` → `87715d7`. Anyone who cloned during the brief window the IP was public will need to re-clone.
+
 ## [v0.0.3] — 2026-05-10
 
 ### Added
