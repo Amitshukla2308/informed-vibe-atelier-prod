@@ -2,7 +2,13 @@
 
 Atelier's "brain" is a 3-layer set of files (global / personal / project) that the backend reads at session boot and injects into the CLI subprocess as context. Atelier is the **reader**; OmniGraph is the **writer**.
 
-OmniGraph is a separate OSS project (link forthcoming — clean publication is in progress). This doc tracks the file-drop contract Atelier reads against, so you can plug in any compatible writer or build your own.
+OmniGraph is a separate OSS project at **https://github.com/Amitshukla2308/omnigraph** and ships on PyPI as `informed-vibe-omnigraph`:
+
+```bash
+pip install informed-vibe-omnigraph
+```
+
+Atelier ships a vendored copy at `omnigraph/` for first-run ergonomics; the standalone is for plugging the same brain into Cursor / Continue / Cline or building your own reader against the file-drop contract below.
 
 ## Why a brain at all?
 
