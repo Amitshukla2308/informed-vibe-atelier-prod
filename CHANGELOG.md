@@ -6,13 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-### Roadmap decisions
+## [v0.0.5] — 2026-05-10
 
-- **Distribution shape (hybrid).** The v0.0.4 vendoring of OmniGraph at `omnigraph/` stays as the install-friendly default for first-run founders. A separate standalone OmniGraph package is planned for v0.0.5, restoring the substrate-vs-UX boundary captured in the Apr-30 / May-2 distribution plans and enabling interop with Cursor / Continue / Cline / other readers against the same `og_artifacts/` contract. Both shapes coexist intentionally — vendored gets you running fast; standalone gets you interop. This decision re-ratifies the post-leak-containment vendoring as a deliberate choice rather than an accident.
-- **Power C (Brain visualization) retired from the roadmap.** The original Apr-25 OmniGraph ROADMAP listed three powers — A: boot-prompt injection, B: Domain Brain drafts, C: Brain visualization (Personal Brain view, React Three Fiber, HyperRetrieval-backed query). Powers A and B are shipped (B partially — writer side vendored, the Approvals/viability-verdict reader UX is still Phase B work in PLAN.md). **Power C was implicitly dropped during the v0.0.4 trim** (`src/viz` + `src/hr` removed from the vendored OmniGraph). This release retires Power C from the public roadmap so docs match reality. Brain visualization can resurface as a separate project against the `og_artifacts/` contract if value materializes; it is not coming back as part of v0.x of Informed Vibe Atelier.
+### Added
+- Standalone OmniGraph repo (`github.com/Amitshukla2308/omnigraph`) rebuilt with clean history (force-rewrite via `git filter-repo`) and packaged for PyPI (`informed-vibe-omnigraph`). Companion to the vendored copy; restores Cursor / Continue / Cline interop per the Apr-30 / May-2 distribution plans. Flip-to-public + PyPI upload gated on maintainer review.
+- `_meta.json` provenance stamp on vendored brain output (`omnigraph_version: 2026-05-10-v0.0.1-trim`, `schema_version: 0.2.1`, `trim_notes`). The public artifact now accurately reports the trimmed runtime instead of inheriting the upstream `v0.4.1` string.
+
+### Changed
+- `bin/informed-vibe brain` (and the underlying `omnigraph_cli.py`): `index` and `query` subcommands now graceful-error with a message pointing users at the standalone package. Previously crashed on lazy-import of the dropped `src/hr/` module.
+- MCP brain-tool runner: `findOmnigraphRunner` now also probes the vendored copy under `config.atelierRoot/omnigraph/src/omnigraph_cli.py`. Resolution order: PATH-resolved `omnigraph` → vendored copy → canonical informed-vibes layout → legacy `~/projects/omnigraph/` path.
+
+### Roadmap decisions
+- **Distribution shape (hybrid).** The v0.0.4 vendoring of OmniGraph at `omnigraph/` stays as the install-friendly default for first-run founders. The separate standalone OmniGraph package (now built; flip-to-public gated) restores the substrate-vs-UX boundary captured in the Apr-30 / May-2 distribution plans and enables interop with Cursor / Continue / Cline / other readers against the same `og_artifacts/` contract. Both shapes coexist intentionally — vendored gets you running fast; standalone gets you interop. This decision re-ratifies the post-leak-containment vendoring as a deliberate choice rather than an accident.
+- **Power C (Brain visualization) retired from the roadmap.** The original Apr-25 OmniGraph ROADMAP listed three powers — A: boot-prompt injection, B: Domain Brain drafts, C: Brain visualization (Personal Brain view, React Three Fiber, relationship-graph-backed query). Powers A and B are shipped (B partially — writer side vendored, the Approvals/viability-verdict reader UX is still Phase B work in PLAN.md). **Power C was implicitly dropped during the v0.0.4 trim** (`src/viz` + `src/hr` removed from the vendored OmniGraph). This release retires Power C from the public roadmap so docs match reality. Brain visualization can resurface as a separate project against the `og_artifacts/` contract if value materializes; it is not coming back as part of v0.x of Informed Vibe Atelier.
 
 ### Security
-
 - **Git history scrub.** A LAN IP (`192.168.88.2:1234`, an LM Studio default the maintainer's machine had hardcoded into the OmniGraph Qwen-Code adapter) was removed from all of `informed-vibe-atelier-prod`'s git history via `git filter-repo --replace-text`. Working tree, all commits, and all release tags now contain the generic `localhost:1234` placeholder. v0.0.1 / v0.0.2 / v0.0.3 commit SHAs unchanged; v0.0.4 commit SHA rewritten from `2f8b1a7` → `87715d7`. Anyone who cloned during the brief window the IP was public will need to re-clone.
 
 ## [v0.0.3] — 2026-05-10
@@ -57,7 +65,8 @@ Initial public release. ⚠️ **Bootstrap host couldn't actually use the worksp
 - `bin/informed-vibe` CLI.
 - Apache 2.0 license, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY.
 
-[Unreleased]: https://github.com/Amitshukla2308/informed-vibe-atelier-prod/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/Amitshukla2308/informed-vibe-atelier-prod/compare/v0.0.5...HEAD
+[v0.0.5]: https://github.com/Amitshukla2308/informed-vibe-atelier-prod/releases/tag/v0.0.5
 [v0.0.3]: https://github.com/Amitshukla2308/informed-vibe-atelier-prod/releases/tag/v0.0.3
 [v0.0.2]: https://github.com/Amitshukla2308/informed-vibe-atelier-prod/releases/tag/v0.0.2
 [v0.0.1]: https://github.com/Amitshukla2308/informed-vibe-atelier-prod/releases/tag/v0.0.1

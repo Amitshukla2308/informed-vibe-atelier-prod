@@ -358,12 +358,16 @@ server.registerTool(
 // ---------------------------------------------------------------------------
 
 function findOmnigraphRunner(): { bin: string; argsPrefix: string[] } | null {
+  // 1. PATH-resolved `omnigraph` (installed via pip from the standalone package).
   const which = spawnSync("which", ["omnigraph"], { encoding: "utf-8" });
   if (which.status === 0 && which.stdout.trim()) {
     return { bin: which.stdout.trim(), argsPrefix: [] };
   }
-  // Canonical informed-vibes layout first, then legacy projects/ path.
+  // 2. Vendored copy inside atelier-oss (the install-friendly default).
+  // 3. Canonical informed-vibes layout.
+  // 4. Legacy projects/ path (back-compat for non-OSS dev environments).
   const candidates = [
+    resolve(config.atelierRoot, "omnigraph/src/omnigraph_cli.py"),
     resolve(process.env.HOME ?? "/root", "informed-vibes/active/omnigraph/src/omnigraph_cli.py"),
     resolve(process.env.HOME ?? "/root", "projects/omnigraph/src/omnigraph_cli.py"),
   ];

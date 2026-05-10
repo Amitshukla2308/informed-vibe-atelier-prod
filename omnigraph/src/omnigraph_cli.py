@@ -35,6 +35,11 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 PILOT = ROOT / "pilot"
 
+# Provenance — stamped into _meta.json so the public artifact accurately
+# reports the trimmed runtime instead of inheriting an upstream version.
+OMNIGRAPH_VERSION = "2026-05-10-v0.0.1-trim"
+SCHEMA_VERSION = "0.2.1"
+
 # Ensure src/ is on path for direct-imports below.
 sys.path.insert(0, str(SRC))
 
@@ -237,6 +242,29 @@ def cmd_compile(args) -> int:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text)
         print(f"✅ {args.target} → {out_path} ({len(text)} chars)")
+        # Provenance stamp: only when writing to an atelier brain tree.
+        if getattr(args, "atelier_root", None):
+            try:
+                meta_path = resolve_meta_path(args.atelier_root, args.user_id or DEFAULT_USER_ID)
+                existing = {}
+                if meta_path.exists():
+                    try:
+                        existing = json.loads(meta_path.read_text())
+                    except Exception:
+                        existing = {}
+                existing.update({
+                    "schema_version": "0.2.1",
+                    "omnigraph_version": OMNIGRAPH_VERSION,
+                    "trim_notes": (
+                        "Vendored into informed-vibe-atelier-prod. "
+                        "Powers A + partial B; Power C (viz) retired. "
+                        "Standalone package: github.com/Amitshukla2308/omnigraph"
+                    ),
+                })
+                meta_path.parent.mkdir(parents=True, exist_ok=True)
+                meta_path.write_text(json.dumps(existing, indent=2))
+            except Exception as e:
+                print(f"⚠ provenance stamp skipped: {e}", file=sys.stderr)
     else:
         sys.stdout.write(text)
         if not text.endswith("\n"):
@@ -245,29 +273,17 @@ def cmd_compile(args) -> int:
 
 
 def cmd_index(args) -> int:
-    """In-process HR build. No subprocess."""
-    from hr import build_all, load_sessions_from_extractions  # type: ignore
-    dirs = args.sessions or [str(PILOT / "qwen")]
-    sessions = load_sessions_from_extractions(dirs)
-    print(f"📦 loaded {len(sessions)} sessions")
-    bundle = build_all(
-        sessions,
-        min_weight=args.min_weight,
-        max_targets_per_session=args.max_targets,
-    )
-    out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
-    (out / "cochange.json").write_text(json.dumps(bundle.cochange, indent=2))
-    (out / "communities.json").write_text(json.dumps(bundle.communities, indent=2))
-    (out / "criticality.json").write_text(json.dumps(bundle.criticality, indent=2))
-    (out / "index_bundle.json").write_text(json.dumps(bundle.to_json(), indent=2))
-    m = bundle.meta
-    print(f"✅ hr bundle → {out}")
-    print(f"   sessions={m['sessions']} cochange_modules={m['cochange_modules']} "
-          f"cochange_pairs={m['cochange_pairs']} communities={m['communities']} "
-          f"critical={m['critical_modules']}")
-    for e in bundle.criticality["meta"]["top_10"]:
-        print(f"   [{e['score']:.3f}] {e['module']}")
-    return 0
+    """Stubbed in the vendored copy.
+
+    Requires the relationship-graph backend (`src/hr/`), which is not in
+    the vendored scope of Informed Vibe Atelier. Use the standalone
+    package to access this subcommand.
+    """
+    print("ERROR: `omnigraph index` requires the relationship-graph backend (src/hr/),")
+    print("which is not in the vendored scope of Informed Vibe Atelier.")
+    print("To use this subcommand, install the standalone omnigraph package")
+    print("from github.com/Amitshukla2308/omnigraph.")
+    return 1
 
 
 # ----------------------------------------------------------------------
@@ -275,13 +291,12 @@ def cmd_index(args) -> int:
 # ----------------------------------------------------------------------
 
 def cmd_query(args) -> int:
-    hr_serve = Path(os.environ.get("HR_ROOT", str(Path.home() / ".hr"))) / "serve"
-    print(f"`omnigraph query` requires the relationship-graph serve to be running.")
-    print(f"HR serve dir: {hr_serve}")
-    print("Stub for now. Once HR serve exposes an HTTP/MCP endpoint, this")
-    print("subcommand will POST the question there with the HR index directory")
-    print("produced by `omnigraph index`, then pretty-print results.")
-    print(f"question: {args.question!r}")
+    """Stubbed in the vendored copy. See cmd_index docstring."""
+    print("ERROR: `omnigraph query` requires the relationship-graph backend (src/hr/),")
+    print("which is not in the vendored scope of Informed Vibe Atelier.")
+    print("To use this subcommand, install the standalone omnigraph package")
+    print("from github.com/Amitshukla2308/omnigraph.")
+    return 1
     return 0
 
 
