@@ -10,6 +10,12 @@
 
 </div>
 
+<p align="center">
+  <img src="./docs/demo/atelier-walkthrough.gif" alt="Informed Vibe Atelier — first-run walkthrough: set up your install, pick provider, name your agent, define a project, land in the workspace, open the canvas" width="900"/>
+</p>
+
+> *Above: a fresh `git clone` to a working canvas in under five minutes. No host, no cloud, no waitlist.*
+
 ---
 
 ## Why this exists
@@ -88,12 +94,7 @@ cd informed-vibe-atelier-prod
 # Open http://localhost:5174 — onboard, name your agent, pick a provider, ship.
 ```
 
-Bring your own provider on first run via the Settings → Providers panel inside the UI:
-
-- **Claude** (OAuth) — most polished
-- **Qwen-Code** (free, local — points at LM Studio / Ollama / vLLM)
-- **Gemini** (API key)
-- **OpenCode** (API key)
+On first run, the onboarding wizard asks you to pick a provider (Claude / Gemini / Qwen-Code / OpenCode). After you land in the workspace, switch / add providers from **Settings → Providers** in the UI. Each provider's CLI must be authenticated on the host before it can drive a session — see the per-provider notes inside the wizard.
 
 Multi-user installs (invite a co-founder over the internet) are documented separately — see [docs/MULTI_USER.md](./docs/MULTI_USER.md) for the Cloudflare-tunnel recipe.
 
@@ -138,15 +139,16 @@ Informed Vibe Atelier is built on the conviction that **visibility beats magic**
 
 | Surface | What you do here |
 |---|---|
+| **Home** | Workspace lobby. Recent sessions, project status, quick actions. The first screen you land on after onboarding. |
 | **Now** | Live agent terminal + chat side by side. Real grid, real semantic events, real scrollback — feels native. Token meter, status chip, what the agent is doing right now. |
+| **Backlog** | Kanban with the agent's work-in-flight + queued. Filter by altitude, surface, priority, founder. |
+| **Implementer** | The execution surface. Watch (and gate) the agent's autonomous build runs against approved Canvas nodes. |
 | **Canvas** | The project shape, six altitudes deep: Project → Plane → Surface → Story → Task → Subtask. The agent (in Drafter mode) proposes nodes; you approve, redirect, or trash. **Every real piece of work is a node with a specific intent sentence.** *"Fix my UI" never enters the approved canvas — it's decomposed first.* |
 | **Brain** | Connectome viz of the three-layer brain. See what the agent thinks it knows about you — and edit it. Demote what's wrong. Promote what's right. The brain is a working surface, not a black box. |
 | **Approvals** | Nothing surprising lands on disk. The agent proposes; you greenlight. Per-section checkboxes for non-trivial changes. |
-| **Reflection** | At session end, the agent does a six-lens crystallization — Engineer · Architect · Strategist · Economist · Scientist · Product — and writes an artifact tomorrow's session reads. Memory across days is a feature, not an afterthought. |
-| **Domain Brain** | The agent's research notes about your industry: how the market actually works, who the real buyer is, what's failed before, what changed recently, viability verdict. **No greenlight = no build.** |
-| **Backlog** | Kanban with the agent's work-in-flight + queued. Filter by altitude, surface, priority, founder. |
-| **Reports** | Weekly shipping cadence. What shipped, what slipped, why. Tokens spent, gates passed. The "you are N steps from a real user completing the task" feedback loop. |
-| **Settings → Providers** | Your keys, encrypted at rest, scoped to your user. Pick a model per project. Switch providers mid-session. The host never sees your secrets. |
+| **World** | Watcher digest. Cross-project signals — what changed in your space, what news matters, what to bring into the brain or canvas. |
+| **Reflect** | At session end, the agent does a six-lens crystallization — Engineer · Architect · Strategist · Economist · Scientist · Product — and writes an artifact tomorrow's session reads. Memory across days is a feature, not an afterthought. |
+| **Settings** | Identity, providers, invites, brain diagnostics, agent personalities. Domain Brain (per-project research notes) lives nested here. |
 
 ---
 
@@ -241,7 +243,7 @@ We've quoted what we're confident Karpathy said publicly, with dates and links. 
 
 ## Roadmap
 
-- **v0.0.1** *(now)* — Multi-tenant auth, multi-provider, ttyd terminal. Linux native, Mac native, Windows-via-WSL.
+- **v0.0.3** *(now)* — Multi-tenant auth, 4 providers exposed (Claude / Gemini / Qwen-Code / OpenCode), ttyd terminal. Linux verified, Mac native + Windows-via-WSL paths documented.
 - **v0.1** — Rust PTY sidecar (replaces ttyd; native cross-platform PTY).
 - **v0.2** — Native Tauri desktop bundles.
 - **v0.3** — First-party brain integration via OmniGraph OSS.

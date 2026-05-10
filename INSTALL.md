@@ -65,7 +65,7 @@ Backend on `:3001`, frontend on `:5174`. Open http://localhost:5174.
 1. Land on the welcome screen.
 2. Name your AI co-founder. This is permanent — it's how the agent will refer to itself going forward.
 3. Pick your provider (Claude / Gemini / Qwen-Code / OpenCode).
-4. Verify your provider CLI is logged in (`claude /login`, `gemini auth login`, etc.).
+4. Verify your provider CLI is logged in (`claude login`, `gemini auth login`, etc.).
 5. Drop into the Now view — your first session.
 
 ## Stop

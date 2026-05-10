@@ -11,7 +11,7 @@ interface OnboardingData {
   orgName: string;
   projectName: string;
   projectDescription: string;
-  provider: "claude" | "gemini";
+  provider: "claude" | "gemini" | "qwen-code" | "opencode";
 }
 
 interface Props {
@@ -72,11 +72,18 @@ export function Onboarding({ onDone }: Props) {
               Atelier runs on top of powerful CLIs. It adds <em>scope gates</em>, a <em>Canvas</em>,
               and <em>memory across sessions</em> around the agent.
             </p>
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
                <button className={data.provider === "claude" ? "primary" : ""} onClick={() => setData({...data, provider: "claude"})}>Claude</button>
                <button className={data.provider === "gemini" ? "primary" : ""} onClick={() => setData({...data, provider: "gemini"})}>Gemini</button>
+               <button className={data.provider === "qwen-code" ? "primary" : ""} onClick={() => setData({...data, provider: "qwen-code"})}>Qwen-Code</button>
+               <button className={data.provider === "opencode" ? "primary" : ""} onClick={() => setData({...data, provider: "opencode"})}>OpenCode</button>
             </div>
-            <p>If you're using Claude, run <code>claude auth login</code> first.<br/>If you're using Gemini, run <code>gemini login</code> first.</p>
+            <p>
+              If you're using <b>Claude</b>, run <code>claude login</code> first.<br/>
+              If you're using <b>Gemini</b>, run <code>gemini auth login</code> first.<br/>
+              If you're using <b>Qwen-Code</b>, point it at a local LM Studio / Ollama / vLLM endpoint via the provider config.<br/>
+              If you're using <b>OpenCode</b>, run its login flow first per its docs.
+            </p>
             <button className="primary" onClick={() => setStep("founder-name")}>I'm signed in — continue</button>
           </div>
         )}

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  typecheck:
+    name: typecheck (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install backend deps
+        run: cd backend && bun install
+
+      - name: Install frontend deps
+        run: cd frontend && npm install
+
+      - name: Type-check backend
+        run: cd backend && ./node_modules/.bin/tsc --noEmit
+
+      - name: Type-check frontend
+        run: cd frontend && ./node_modules/.bin/tsc --noEmit
