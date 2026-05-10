@@ -21,6 +21,11 @@ type Tab = "signin" | "request" | "forgot" | "reset";
 export function SignIn() {
   const [tab, setTab] = useState<Tab>("signin");
 
+  // First-run detection: when host_exists=false, we're on a fresh install
+  // and the user IS the admin. Default to register tab, hide signin tab,
+  // and reframe the copy as "set up your install" rather than "ask to join".
+  const [hostExists, setHostExists] = useState<boolean | null>(null);
+
   // Shared
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,6 +42,25 @@ export function SignIn() {
   const [resetConfirm, setResetConfirm] = useState("");
 
   function resetMessages() { setError(null); setHint(null); }
+
+  // Probe install-state on mount. If no host exists yet, this is a fresh
+  // install — default to the register tab and hide the signin tab. Safe
+  // default on error is hostExists=true (existing-install signin UX).
+  useEffect(() => {
+    fetch(`${BASE_URL}/auth/install-state`)
+      .then(r => r.json())
+      .then(d => setHostExists(d.host_exists ?? true))
+      .catch(() => setHostExists(true));
+  }, []);
+
+  // When we discover this is a fresh install, switch to the register tab
+  // so the user lands on "set up your install" without an extra click.
+  // Don't override if the user already opened the page via ?reset=<token>.
+  useEffect(() => {
+    if (hostExists === false) {
+      setTab(prev => (prev === "reset" ? prev : "request"));
+    }
+  }, [hostExists]);
 
   // Detect ?reset=<token> on first render and flip into reset mode.
   // Removes the token from the URL bar so a refresh / back-button doesn't
@@ -103,7 +127,9 @@ export function SignIn() {
       }
       if (data.first_user) {
         // First user on a fresh box — auto-approved. Cookie is set.
-        window.location.assign("/home");
+        // Route to "/?signin=admin" so App.tsx's onboarding-state branch
+        // shows the onboarding wizard (route 5 in resolveAppState).
+        window.location.assign("/?signin=admin");
         return;
       }
       setRequestSubmitted({ status: data.status === "approved" ? "approved" : "pending" });
@@ -200,21 +226,24 @@ export function SignIn() {
     textDecoration: "underline", textUnderlineOffset: 3,
   };
 
+  const isFirstRun = hostExists === false;
   const heading =
     tab === "signin"  ? "Welcome back." :
-    tab === "request" ? "Ask to join." :
+    tab === "request" ? (isFirstRun ? "Set up your install." : "Ask to join.") :
     tab === "forgot"  ? "Forgot your password?" :
                         "Set a new password.";
   const eyebrow =
     tab === "signin"  ? "Sign in" :
-    tab === "request" ? "Request access" :
+    tab === "request" ? (isFirstRun ? "First-run setup" : "Request access") :
     tab === "forgot"  ? "Password reset" :
                         "Reset password";
   const lede =
     tab === "signin"
       ? "Email and password — nothing fancy. Cookie-based sessions, 30 days."
       : tab === "request"
-      ? "Submit a request. The host of this Atelier reviews and approves before you can sign in."
+      ? (isFirstRun
+          ? "You're the first user on this install. Create your host account — you'll be auto-approved as admin."
+          : "Submit a request. The host of this Atelier reviews and approves before you can sign in.")
       : tab === "forgot"
       ? "Tell us your email; we'll send a one-time link that lets you set a new password."
       : "Pick a new password. Once you save it you'll be signed in here automatically.";
@@ -240,8 +269,9 @@ export function SignIn() {
         <h1 className="lp-section-title" style={{ marginBottom: 18 }}>{heading}</h1>
         <p className="lp-hero-lede" style={{ marginBottom: 28 }}>{lede}</p>
 
-        {/* Tab selector — hidden on reset (token-driven, no manual switch) */}
-        {tab !== "reset" && (
+        {/* Tab selector — hidden on reset (token-driven) and on first-run
+            (no host yet → there's nobody to "sign in" as; show register only). */}
+        {tab !== "reset" && !isFirstRun && (
           <div style={{
             maxWidth: 460, margin: "0 auto 20px",
             display: "flex", gap: 4, padding: 4, borderRadius: 10,
@@ -317,7 +347,9 @@ export function SignIn() {
             </label>
             {error && <FormError error={error} hint={hint} />}
             <button type="submit" className="lp-cta-primary" disabled={busy} style={{ justifyContent: "center", marginTop: 4 }}>
-              <span>{busy ? "Submitting…" : "Submit request"}</span>
+              <span>{busy
+                ? (isFirstRun ? "Creating…" : "Submitting…")
+                : (isFirstRun ? "Create host account" : "Submit request")}</span>
               <span className="lp-cta-arrow">→</span>
             </button>
             <div style={{
@@ -325,7 +357,9 @@ export function SignIn() {
               letterSpacing: "0.08em", color: "var(--ink-3)",
               textTransform: "uppercase", textAlign: "center", marginTop: 4,
             }}>
-              Pending until approved · Argon2id hashed
+              {isFirstRun
+                ? "Auto-approved as admin · Argon2id hashed"
+                : "Pending until approved · Argon2id hashed"}
             </div>
           </form>
         )}

@@ -43,3 +43,6 @@ desktop.ini
 # Python (legacy backend artifacts)
 **/__pycache__/
 *.pyc
+
+# CLI runtime (pid files + logs)
+.run/

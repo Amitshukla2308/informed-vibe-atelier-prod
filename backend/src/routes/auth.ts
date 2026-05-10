@@ -50,6 +50,13 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
     });
   }
 
+  // GET /auth/install-state — public; reports whether this install needs a host bootstrap.
+  // Used by the SignIn page to decide whether to show "Sign in" vs "Set up host" UX.
+  if (path === "/auth/install-state" && req.method === "GET") {
+    const row = getDb().query(`SELECT COUNT(*) AS n FROM users`).get() as { n: number };
+    return json({ host_exists: row.n > 0, user_count: row.n });
+  }
+
   // POST /logout — revoke current access token
   if (path === "/logout" && req.method === "POST") {
     const cookie = req.headers.get("cookie") ?? "";

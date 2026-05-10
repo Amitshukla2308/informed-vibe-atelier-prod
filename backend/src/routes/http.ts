@@ -273,6 +273,48 @@ export async function handleHttp(req: Request): Promise<Response> {
         scaffoldProject(body.project_name, body.project_description);
         created = true;
       }
+
+      // Mirror onboarding output into SQL so multi-tenant ACL checks
+      // (canUserAccessProject) succeed for canvas/sessions/brain endpoints.
+      // Resolve the calling user — either the authed user, or the lone
+      // bootstrap user when this is the very first onboarding pass on a
+      // fresh box (gateOnboardingWrite allowed it through with userCount<=1).
+      const ctx = getAuthContext(req);
+      const db = getDb();
+      let actingUserId: string | null = ctx?.user.id ?? null;
+      if (!actingUserId) {
+        const sole = db.query(`SELECT id FROM users LIMIT 2`).all() as { id: string }[];
+        if (sole.length === 1) actingUserId = sole[0].id;
+      }
+
+      if (actingUserId && body.org_name && body.org_name.trim() !== "") {
+        const now = nowIso();
+        // Find or create org owned by this user with this name.
+        let orgRow = db.query(
+          `SELECT id FROM orgs WHERE owner_user_id = ? AND name = ?`
+        ).get(actingUserId, body.org_name) as { id: string } | undefined;
+        if (!orgRow) {
+          const orgId = newId();
+          db.query(
+            `INSERT INTO orgs (id, name, owner_user_id, default_visibility, created_at)
+             VALUES (?, ?, ?, 'all', ?)`
+          ).run(orgId, body.org_name, actingUserId, now);
+          orgRow = { id: orgId };
+        }
+        // Admin membership (UNIQUE on user/org/role — INSERT OR IGNORE).
+        db.query(
+          `INSERT OR IGNORE INTO memberships (id, user_id, org_id, role, created_at)
+           VALUES (?, ?, ?, 'admin', ?)`
+        ).run(newId(), actingUserId, orgRow.id, now);
+        // Project row (UNIQUE on org_id+name — INSERT OR IGNORE).
+        if (body.project_name && body.project_name.trim() !== "") {
+          db.query(
+            `INSERT OR IGNORE INTO projects (id, org_id, name, description, created_at, created_by_user_id)
+             VALUES (?, ?, ?, ?, ?, ?)`
+          ).run(newId(), orgRow.id, body.project_name, body.project_description ?? null, now, actingUserId);
+        }
+      }
+
       return json({ ok: true, project_created: created });
     } catch (e) {
       return json({ error: String(e) }, 400);
