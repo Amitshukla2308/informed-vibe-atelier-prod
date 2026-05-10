@@ -10,6 +10,7 @@ v0 supports Linux, Mac, and Windows-via-WSL. Native Windows is on the roadmap.
 | Node | ≥20 | Frontend tooling (Vite) |
 | ttyd | ≥1.7 | Browser PTY for the CLI subprocess |
 | One CLI agent | latest | One of: `claude` / `gemini` / `qwen-code` / `opencode` |
+| Python | ≥3.10 | OmniGraph (vendored brain pipeline) — optional but recommended |
 
 ## Linux
 
@@ -28,12 +29,15 @@ sudo apt install ttyd      # Debian/Ubuntu
 # CLI agent (Claude shown; substitute your preferred provider)
 npm install -g @anthropic-ai/claude-code
 claude login
+
+# Python (for the vendored OmniGraph brain pipeline — optional)
+sudo apt install python3 python3-pip
 ```
 
 ## Mac
 
 ```bash
-brew install bun node ttyd
+brew install bun node ttyd python
 npm install -g @anthropic-ai/claude-code
 claude login
 ```
@@ -73,6 +77,18 @@ Backend on `:3001`, frontend on `:5174`. Open http://localhost:5174.
 ```bash
 ./bin/informed-vibe stop
 ```
+
+## Optional: enable the brain (OmniGraph)
+
+Atelier ships with a vendored OmniGraph at `omnigraph/` that compiles a 3-layer brain (global / personal / project) from your past AI-tool conversations. Without it, the agent runs without founder context.
+
+```bash
+./bin/informed-vibe brain init       # installs deps + sets up output dir
+./bin/informed-vibe brain compile    # one-shot run
+./bin/informed-vibe brain daemon     # optional: refresh every 10 min in background
+```
+
+See [`omnigraph/README.md`](./omnigraph/README.md) for what's vendored and [`docs/BRAIN_INTEGRATION.md`](./docs/BRAIN_INTEGRATION.md) for the file-drop contract.
 
 ## Multi-user
 

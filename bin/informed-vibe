@@ -23,6 +23,10 @@ Usage:
   informed-vibe status              Show running pids + ports
   informed-vibe provider add        Interactive: register a new provider's CLI
   informed-vibe invite              Print a fresh invite URL
+  informed-vibe brain init          Install OmniGraph deps + create output dir
+  informed-vibe brain compile       Run harvest+compile once
+  informed-vibe brain status        Pipeline state
+  informed-vibe brain daemon        10-min refresh daemon (background)
   informed-vibe help                Show this message
 
 Env overrides:
@@ -100,6 +104,77 @@ cmd_invite() {
     }
 }
 
+cmd_brain() {
+  local sub="${1:-help}"; shift || true
+  local OG_DIR="$ROOT/omnigraph"
+  local OG_USER_ID="${OMNIGRAPH_USER_ID:-default}"
+  local OG_LOGS_DIR="${OMNIGRAPH_LOGS_DIR:-$ROOT/.run}"
+  if [ ! -d "$OG_DIR" ]; then
+    echo "OmniGraph not vendored at $OG_DIR — nothing to run."
+    return 1
+  fi
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 not found — install Python >=3.10 to use brain commands."
+    return 1
+  fi
+  case "$sub" in
+    init)
+      echo "==> Installing OmniGraph deps"
+      python3 -m pip install --user -r "$OG_DIR/requirements.txt" || return 1
+      mkdir -p "$ROOT/data/users/$OG_USER_ID/brain/personal/compiled"
+      mkdir -p "$OG_LOGS_DIR"
+      echo "==> OmniGraph initialized."
+      echo "    output:  $ROOT/data/users/$OG_USER_ID/brain/personal/compiled/"
+      echo "    logs:    $OG_LOGS_DIR"
+      ;;
+    compile)
+      echo "==> Running OmniGraph pipeline (--atelier-root $ROOT --user-id $OG_USER_ID)"
+      python3 "$OG_DIR/src/omnigraph_cli.py" pipeline \
+        --atelier-root "$ROOT" --user-id "$OG_USER_ID" "$@" || return 1
+      echo "==> Compiling 3-layer brain artifacts"
+      for target in light_ir_global light_ir_personal; do
+        python3 "$OG_DIR/src/omnigraph_cli.py" compile "$target" \
+          --atelier-root "$ROOT" --user-id "$OG_USER_ID" || return 1
+      done
+      ;;
+    status)
+      python3 "$OG_DIR/src/omnigraph_cli.py" status \
+        --atelier-root "$ROOT" --user-id "$OG_USER_ID" "$@"
+      ;;
+    daemon)
+      mkdir -p "$OG_LOGS_DIR"
+      echo "==> Starting OmniGraph daemon (10-min loop)"
+      OMNIGRAPH_LOGS_DIR="$OG_LOGS_DIR" \
+        nohup python3 "$OG_DIR/scripts/etl_daemon.py" \
+          --atelier-root "$ROOT" --user-id "$OG_USER_ID" --interval 600 \
+          > "$OG_LOGS_DIR/etl_daemon.log" 2>&1 &
+      echo $! > "$OG_LOGS_DIR/etl_daemon.pid"
+      echo "daemon pid: $(cat "$OG_LOGS_DIR/etl_daemon.pid")"
+      echo "log: $OG_LOGS_DIR/etl_daemon.log"
+      ;;
+    help|--help|-h|"")
+      cat <<EOF
+informed-vibe brain — OmniGraph (vendored) control
+
+Usage:
+  informed-vibe brain init       Install deps + create output dir
+  informed-vibe brain compile    Run the harvest+compile pipeline once
+  informed-vibe brain status     Show pipeline state + artifact freshness
+  informed-vibe brain daemon     Start the 10-min refresh daemon (background)
+
+Env overrides:
+  OMNIGRAPH_USER_ID    (default "default")
+  OMNIGRAPH_LOGS_DIR   (default \$ROOT/.run)
+EOF
+      ;;
+    *)
+      echo "unknown brain subcommand: $sub"
+      cmd_brain help
+      return 1
+      ;;
+  esac
+}
+
 case "${1:-help}" in
   init)         cmd_init ;;
   start)        cmd_start ;;
@@ -113,6 +188,10 @@ case "${1:-help}" in
     esac
     ;;
   invite)       cmd_invite ;;
+  brain)
+    shift
+    cmd_brain "$@"
+    ;;
   help|--help|-h) usage ;;
   *)            usage; exit 1 ;;
 esac

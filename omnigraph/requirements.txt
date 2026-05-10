@@ -1,0 +1,4 @@
+# OmniGraph (vendored) — runtime dependencies
+# See README.md for what's vendored and what's not.
+pyyaml>=6.0
+json_repair>=0.25

@@ -40,9 +40,13 @@ desktop.ini
 .vscode/
 .idea/
 
-# Python (legacy backend artifacts)
+# Python (legacy backend artifacts + vendored OmniGraph)
 **/__pycache__/
 *.pyc
+
+# Vendored OmniGraph runtime data (must NEVER be in OSS history)
+omnigraph/pilot/
+omnigraph/data/
 
 # CLI runtime (pid files + logs)
 .run/
