@@ -2,7 +2,7 @@
 
 Atelier's "brain" is a 3-layer set of files (global / personal / project) that the backend reads at session boot and injects into the CLI subprocess as context. Atelier is the **reader**; OmniGraph is the **writer**.
 
-OmniGraph is a separate OSS project: https://github.com/Amitshukla2308/omnigraph (in progress; this doc tracks the contract).
+OmniGraph is a separate OSS project (link forthcoming — clean publication is in progress). This doc tracks the file-drop contract Atelier reads against, so you can plug in any compatible writer or build your own.
 
 ## Why a brain at all?
 
