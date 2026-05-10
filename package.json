@@ -1,0 +1,27 @@
+{
+  "name": "informed-vibe-atelier",
+  "version": "0.0.1",
+  "private": false,
+  "license": "Apache-2.0",
+  "description": "Informed Vibe Atelier — local-first OS for AI co-founders",
+  "homepage": "https://github.com/Amitshukla2308/informed-vibe-atelier-prod",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Amitshukla2308/informed-vibe-atelier-prod.git"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "bun run dev:backend & bun run dev:frontend",
+    "dev:backend": "cd backend && bun --watch src/index.ts",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "bun run start:backend & bun run start:frontend",
+    "start:backend": "cd backend && bun src/index.ts",
+    "start:frontend": "cd frontend && npm run preview",
+    "build": "cd frontend && npm run build",
+    "lint": "cd frontend && npm run lint",
+    "typecheck": "cd backend && ./node_modules/.bin/tsc --noEmit && cd ../frontend && ./node_modules/.bin/tsc --noEmit"
+  }
+}

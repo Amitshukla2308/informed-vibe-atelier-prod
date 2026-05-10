@@ -1,0 +1,45 @@
+# Dependencies
+**/node_modules/
+backend/bun.lock
+frontend/package-lock.json
+frontend/bun.lock
+
+# Build artifacts
+frontend/dist/
+backend/dist/
+
+# Runtime / per-user data (must NEVER be in OSS history)
+data/
+projects/
+og_artifacts/
+qa/
+*.db
+*.db-shm
+*.db-wal
+*.db.bak-*
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Tooling caches
+.qwen/
+.playwright-mcp/
+.pre-overlay-*
+
+# Logs
+*.log
+
+# OS detritus
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor caches
+.vscode/
+.idea/
+
+# Python (legacy backend artifacts)
+**/__pycache__/
+*.pyc

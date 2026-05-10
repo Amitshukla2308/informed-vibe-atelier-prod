@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# informed-vibe — Atelier control CLI
+# Subcommands: init | start | stop | provider add | invite | help
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BACKEND_PORT="${ATELIER_PORT:-3001}"
+FRONTEND_PORT="${ATELIER_FRONTEND_PORT:-5174}"
+PIDFILE_BACKEND="$ROOT/.run/backend.pid"
+PIDFILE_FRONTEND="$ROOT/.run/frontend.pid"
+
+mkdir -p "$ROOT/.run"
+
+usage() {
+  cat <<EOF
+informed-vibe — Atelier control CLI
+
+Usage:
+  informed-vibe init                Install deps, set up SQLite, write default config
+  informed-vibe start               Start backend + frontend (detached)
+  informed-vibe stop                Stop backend + frontend
+  informed-vibe status              Show running pids + ports
+  informed-vibe provider add        Interactive: register a new provider's CLI
+  informed-vibe invite              Print a fresh invite URL
+  informed-vibe help                Show this message
+
+Env overrides:
+  ATELIER_PORT          (default 3001)  # backend
+  ATELIER_FRONTEND_PORT (default 5174)  # frontend (passed to vite)
+EOF
+}
+
+cmd_init() {
+  echo "==> Installing backend deps (bun install)"
+  ( cd "$ROOT/backend" && bun install )
+
+  echo "==> Installing frontend deps (npm install)"
+  ( cd "$ROOT/frontend" && npm install )
+
+  echo "==> Creating runtime data directories"
+  mkdir -p "$ROOT/data/sessions" "$ROOT/data/tmp" "$ROOT/data/users"
+
+  echo "==> Initializing SQLite (boot/validate.ts)"
+  ( cd "$ROOT/backend" && bun run validate )
+
+  echo "==> Done. Run: informed-vibe start"
+}
+
+cmd_start() {
+  echo "==> Starting backend on :$BACKEND_PORT"
+  ( cd "$ROOT/backend" && ATELIER_PORT="$BACKEND_PORT" nohup bun src/index.ts > "$ROOT/.run/backend.log" 2>&1 & echo $! > "$PIDFILE_BACKEND" )
+
+  echo "==> Starting frontend on :$FRONTEND_PORT"
+  ( cd "$ROOT/frontend" && nohup npm run dev -- --port "$FRONTEND_PORT" > "$ROOT/.run/frontend.log" 2>&1 & echo $! > "$PIDFILE_FRONTEND" )
+
+  sleep 2
+  cmd_status
+  echo "==> Logs: $ROOT/.run/backend.log, $ROOT/.run/frontend.log"
+  echo "==> Open http://localhost:$FRONTEND_PORT"
+}
+
+cmd_stop() {
+  for f in "$PIDFILE_BACKEND" "$PIDFILE_FRONTEND"; do
+    if [ -f "$f" ]; then
+      pid="$(cat "$f")"
+      if kill -0 "$pid" 2>/dev/null; then
+        echo "==> Stopping pid $pid ($(basename "$f"))"
+        kill "$pid"
+      fi
+      rm -f "$f"
+    fi
+  done
+}
+
+cmd_status() {
+  for f in "$PIDFILE_BACKEND" "$PIDFILE_FRONTEND"; do
+    name="$(basename "$f" .pid)"
+    if [ -f "$f" ] && kill -0 "$(cat "$f")" 2>/dev/null; then
+      echo "$name: running (pid $(cat "$f"))"
+    else
+      echo "$name: stopped"
+    fi
+  done
+  echo "ports: backend=$BACKEND_PORT frontend=$FRONTEND_PORT"
+}
+
+cmd_provider_add() {
+  echo "==> Provider registration is interactive in the frontend."
+  echo "    Open http://localhost:$FRONTEND_PORT, sign in, and go to Settings → Providers."
+}
+
+cmd_invite() {
+  curl -fsS "http://localhost:$BACKEND_PORT/api/invites/new" \
+    -H "Cookie: $(cat "$ROOT/.run/host-session.cookie" 2>/dev/null || echo '')" \
+    | jq -r '.url' || {
+      echo "Failed. Is the backend running, and are you signed in as host?"
+      echo "Run \`informed-vibe start\` and sign in via the frontend first."
+      exit 1
+    }
+}
+
+case "${1:-help}" in
+  init)         cmd_init ;;
+  start)        cmd_start ;;
+  stop)         cmd_stop ;;
+  status)       cmd_status ;;
+  provider)
+    shift
+    case "${1:-}" in
+      add)      cmd_provider_add ;;
+      *)        usage; exit 1 ;;
+    esac
+    ;;
+  invite)       cmd_invite ;;
+  help|--help|-h) usage ;;
+  *)            usage; exit 1 ;;
+esac

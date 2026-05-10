@@ -1,0 +1,71 @@
+# Atelier agent identity — set during onboarding.
+# An empty agent_name triggers the onboarder to ask the founder for a name on first run.
+
+agent_name: ""
+founder_name: ""
+founder_email: ""
+org_name: ""
+active_project: ""
+
+# Display
+logged_out: false
+locale: en-US
+timezone: UTC
+
+# Tone — runtime-overridable in Settings.
+tone_preference: direct
+response_density: terse
+
+# Confidence thresholds for write/queue/suppress decisions.
+confidence_thresholds:
+  auto_write: high
+  review_queue: medium
+  suppress: low
+
+# Fatigue tracking — surfaces "take a break" nudges after long sessions.
+fatigue:
+  enabled: true
+  soft_warn_after_minutes: 90
+  hard_nudge_after_minutes: 150
+  track_in_personal_brain: true
+
+# Classification defaults — criteria an auto-added canvas node must meet.
+classification_defaults:
+  auto_add_requires:
+    - breaking: safe
+    - blast_radius: low
+    - domain_sensitivity: none
+    - vision_alignment: high
+    - novelty: routine
+
+# Always-on safety rules.
+guardians:
+  always_on:
+    - no_secrets_in_config
+    - no_destructive_actions_without_flag
+
+# Personal brain context budget.
+personal_brain:
+  max_context_tokens: 2500
+  escalate_axiom_threshold: 3
+
+# Usage tracking — opt-in. Set endpoint to enable.
+usage_tracking:
+  enabled: false
+  endpoint: ""
+  inject_script_path: scripts/inject_usage.js
+
+# Provider preference — one of: claude | gemini | qwen-code | opencode
+# Override at runtime via env var ATELIER_PROVIDER.
+provider: claude
+
+# Provider binary overrides — leave blank to use $PATH.
+claude_bin: ""
+gemini_bin: ""
+qwen_bin: ""
+
+# Implementer subsystem (background runner that builds canvas nodes).
+implementer:
+  auto_run: true
+  dry_run: false
+  interval_ms: 30000

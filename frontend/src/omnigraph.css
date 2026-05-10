@@ -1,0 +1,1679 @@
+/* ============================================================
+   omnigraph.css — auto-prefixed from samples/styles.css.
+   Every rule is gated under [data-theme="omnigraph"] so it
+   only applies when the html element carries that attr.
+   Existing themes (paper/midnight/etc.) keep working unchanged.
+   ============================================================ */
+
+/* ============================================================
+   Atelier — OmniGraph theme
+   Deep navy stage · glass panels · electric accents
+   ============================================================ */
+
+[data-theme="omnigraph"]{
+  /* surfaces */
+  --bg-0:      #060c14;
+  --bg-1:      #0a1420;
+  --bg-2:      #0f1c2c;
+  --bg-3:      #142337;
+
+  /* ink scale — bumped to AA-compliant on bg-0 (#060c14):
+     ink-3 was #71717a (3.95:1 — failed AA), now #8e8e98 (~6.0:1).
+     ink-4 was #52525b (1.4:1 — fails AA badly), now #7a7a83 (~4.5:1).
+     ink-0/1/2 unchanged — already passing. */
+  --ink-0:     #f4f4f5;
+  --ink-1:     #d4d4d8;
+  --ink-2:     #a1a1aa;
+  --ink-3:     #8e8e98;
+  --ink-4:     #888893;
+
+  /* glass */
+  --glass:        rgba(255,255,255,0.04);
+  --glass-strong: rgba(255,255,255,0.06);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-hover:  rgba(255,255,255,0.07);
+
+  /* hairlines */
+  --line-0:    rgba(255,255,255,0.06);
+  --line-1:    rgba(255,255,255,0.10);
+  --line-2:    rgba(255,255,255,0.14);
+
+  /* accents (neuron palette) */
+  --violet:    #E89060;
+  --violet-2:  #F5B388;
+  --violet-bg: rgba(232,144,96,0.16);
+  --violet-bd: rgba(232,144,96,0.35);
+
+  --cyan:      #38bdf8;
+  --cyan-2:    #7dd3fc;
+  --cyan-bg:   rgba(56,189,248,0.14);
+  --cyan-bd:   rgba(56,189,248,0.32);
+
+  --pink:      #f472b6;
+  --pink-2:    #fbcfe8;
+  --pink-bg:   rgba(244,114,182,0.14);
+  --pink-bd:   rgba(244,114,182,0.32);
+
+  --amber:     #fbbf24;
+  --amber-bg:  rgba(251,191,36,0.14);
+  --amber-bd:  rgba(251,191,36,0.32);
+
+  --lime:      #a3e635;
+  --lime-bg:   rgba(163,230,53,0.14);
+  --lime-bd:   rgba(163,230,53,0.32);
+
+  --rose:      #f43f5e;
+  --rose-bg:   rgba(244,63,94,0.14);
+  --rose-bd:   rgba(244,63,94,0.32);
+
+  /* semantic — mapped onto the accent palette */
+  --sem-blue:    var(--cyan);
+  --sem-violet:  var(--violet);
+  --sem-pink:    var(--pink);
+  --sem-amber:   var(--amber);
+  --sem-green:   var(--lime);
+  --sem-red:     var(--rose);
+  --sem-grey:    var(--ink-3);
+
+  /* type */
+  --font-serif: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+  --font-sans:  ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif;
+  --font-mono:  ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+
+  --t-1: 0.66rem;
+  --t-2: 0.74rem;
+  --t-3: 0.86rem;
+  --t-4: 1rem;
+  --t-5: 1.25rem;
+  --t-6: 1.6rem;
+  --t-7: 2.4rem;
+
+  --g-1: 4px;
+  --g-2: 8px;
+  --g-3: 12px;
+  --g-4: 16px;
+  --g-5: 24px;
+  --g-6: 32px;
+  --g-7: 48px;
+
+  --rail:   72px;
+  --ribbon: 44px;
+  --drawer: 480px;
+
+  --r-1: 6px;
+  --r-2: 10px;
+  --r-3: 14px;
+
+  --ease: cubic-bezier(.25,.6,.3,1)}
+
+[data-theme="omnigraph"] *, [data-theme="omnigraph"] *::before, [data-theme="omnigraph"] *::after{ box-sizing: border-box}
+
+[data-theme="omnigraph"] body{
+  background: var(--bg-0);
+  color: var(--ink-0);
+  font-family: var(--font-sans);
+  font-size: var(--t-3);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility}
+
+/* baked-in radial vignette behind the entire shell */
+[data-theme="omnigraph"] .stage-bg{
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(120% 80% at 50% 35%, #0d1c2b 0%, #0a1420 45%, #060b12 85%, #03070c 100%);
+}
+[data-theme="omnigraph"] .stage-bg::after{
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ===== utility ===== */
+[data-theme="omnigraph"] .mono{ font-family: var(--font-mono); letter-spacing: 0.01em}
+[data-theme="omnigraph"] .serif{ font-family: var(--font-serif)}
+[data-theme="omnigraph"] .mute{ color: var(--ink-2)}
+[data-theme="omnigraph"] .faint{ color: var(--ink-3)}
+[data-theme="omnigraph"] .kicker{ font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); font-weight: 600}
+
+
+[data-theme="omnigraph"] *::-webkit-scrollbar-track{ background: transparent}
+[data-theme="omnigraph"] *::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.06); border-radius: 6px}
+[data-theme="omnigraph"] *::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,0.12)}
+
+/* ===== glass ===== */
+[data-theme="omnigraph"] .glass{
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-3);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%)}
+[data-theme="omnigraph"] .glass-flat{
+  background: var(--glass);
+  border: 1px solid var(--glass-border)}
+
+/* ===== shell ===== */
+
+
+/* ===== brand cell ===== */
+[data-theme="omnigraph"] .brand{
+  border-right: 1px solid var(--line-0);
+  border-bottom: 1px solid var(--line-0);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--ink-1);
+  user-select: none;
+  background: rgba(255,255,255,0.015)}
+[data-theme="omnigraph"] .brand b{ color: var(--violet-2); font-weight: 600}
+
+/* ===== ribbon ===== */
+[data-theme="omnigraph"] .ribbon{
+  border-bottom: 1px solid var(--line-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  color: var(--ink-2);
+  white-space: nowrap;
+  background: rgba(255,255,255,0.015)}
+
+
+@media (max-width: 1100px) {  }
+@media (max-width: 880px) {  }
+
+[data-theme="omnigraph"] .ribbon-crumb .proj{
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-0);
+  letter-spacing: 0.06em}
+[data-theme="omnigraph"] .ribbon-crumb .proj-sub{ color: var(--ink-3); font-size: 10.5px}
+[data-theme="omnigraph"] .ribbon-divider{ background: var(--line-1)}
+[data-theme="omnigraph"] .ribbon-session{ color: var(--ink-2)}
+[data-theme="omnigraph"] .lamp{ width: 6px; height: 6px; border-radius: 50%; }
+[data-theme="omnigraph"] .ribbon-session .lamp{ background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+[data-theme="omnigraph"] .ribbon-session[data-state="idle"] .lamp{ background: var(--ink-3); box-shadow: none; }
+[data-theme="omnigraph"] .ribbon-session[data-state="thinking"] .lamp{ background: var(--cyan); box-shadow: 0 0 8px var(--cyan); animation: pulse 1.2s ease-in-out infinite; }
+[data-theme="omnigraph"] .ribbon-session[data-state="drafting"] .lamp{ background: var(--violet); box-shadow: 0 0 8px var(--violet); animation: pulse 1.2s ease-in-out infinite; }
+[data-theme="omnigraph"] .ribbon-session[data-state="blocked"] .lamp{ background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+@keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+
+
+[data-theme="omnigraph"] .ribbon-role{
+  border: 1px solid var(--line-1);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.02);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 10.5px}
+[data-theme="omnigraph"] .ribbon-role .dot{ border-radius: 50%; background: var(--violet); box-shadow: 0 0 6px var(--violet)}
+
+[data-theme="omnigraph"] .ribbon-tweaks{
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--line-1);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .15s var(--ease)}
+[data-theme="omnigraph"] .ribbon-tweaks:hover{ background: var(--glass-hover); border-color: var(--line-2); color: var(--ink-0)}
+
+
+[data-theme="omnigraph"] .ribbon-bgtask{ border-radius: 999px;
+  background: var(--cyan-bg); border: 1px solid var(--cyan-bd);
+  font-family: var(--font-mono); font-size: 10px; color: var(--cyan-2)}
+[data-theme="omnigraph"] .bgtask-dot{ border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; animation: pulse 1.2s ease-in-out infinite}
+
+/* ===== rail ===== */
+[data-theme="omnigraph"] .rail{
+  border-right: 1px solid var(--line-0);
+  background: rgba(255,255,255,0.015)}
+
+[data-theme="omnigraph"] .rail-item{
+  border: 0; background: transparent;
+  color: var(--ink-3);
+  font-family: var(--font-mono); font-size: 9.5px;
+  text-transform: lowercase; letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: color .15s var(--ease)}
+[data-theme="omnigraph"] .rail-item:hover{ color: var(--ink-1)}
+[data-theme="omnigraph"] .rail-item svg{ stroke-width: 1.5}
+[data-theme="omnigraph"] .rail-item.active{ color: var(--violet-2)}
+[data-theme="omnigraph"] .rail-item.active::before{
+  content: "";
+  background: var(--violet);
+  box-shadow: 0 0 10px var(--violet)}
+[data-theme="omnigraph"] .rail-foot{
+  border-top: 1px solid var(--line-0);
+  font-family: var(--font-mono); font-size: 9.5px;
+  /* bumped from --ink-3 (#71717a, ~4.6:1) to --ink-2 (#a1a1aa, ~7:1) against --bg-0
+     so the rail credit clears WCAG AA at this small size. */
+  color: var(--ink-2); text-align: center;
+  text-transform: lowercase; letter-spacing: 0.06em;
+  line-height: 1.5}
+
+/* ===== view ===== */
+
+
+
+/* ===== chips & pills ===== */
+[data-theme="omnigraph"] .pill{ border-radius: 999px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line-1);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-1);
+  text-transform: lowercase; letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all .15s var(--ease)}
+[data-theme="omnigraph"] .pill:hover{ background: var(--glass-hover); border-color: var(--line-2)}
+[data-theme="omnigraph"] .pill .dot{ border-radius: 50%; background: var(--ink-3)}
+[data-theme="omnigraph"] .pill.on{ background: var(--violet-bg); border-color: var(--violet-bd); color: #ede9fe}
+[data-theme="omnigraph"] .pill.on .dot{ background: var(--violet-2); box-shadow: 0 0 8px var(--violet)}
+
+[data-theme="omnigraph"] .badge{
+  font-family: var(--font-mono); font-size: 10px; border-radius: 999px;
+  text-transform: lowercase; letter-spacing: 0.04em;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  line-height: 1.5}
+[data-theme="omnigraph"] .badge .bdot{ border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor}
+[data-theme="omnigraph"] .badge[data-b="done"], [data-theme="omnigraph"] .badge[data-b="shipped"], [data-theme="omnigraph"] .badge[data-b="verified"], [data-theme="omnigraph"] .badge[data-b="healthy"]{ color: var(--lime)}
+[data-theme="omnigraph"] .badge[data-b="in-progress"]{ color: var(--cyan)}
+[data-theme="omnigraph"] .badge[data-b="drift"], [data-theme="omnigraph"] .badge[data-b="drift-risk"]{ color: var(--amber)}
+[data-theme="omnigraph"] .badge[data-b="blocked"], [data-theme="omnigraph"] .badge[data-b="review"], [data-theme="omnigraph"] .badge[data-b="awaiting-founder"]{ color: var(--pink)}
+[data-theme="omnigraph"] .badge[data-b="violation"], [data-theme="omnigraph"] .badge[data-b="approval-needed"], [data-theme="omnigraph"] .badge[data-b="breaking"]{ color: var(--rose)}
+[data-theme="omnigraph"] .badge[data-b="proposed"]{ color: var(--ink-2)}
+[data-theme="omnigraph"] .badge[data-b="auto"], [data-theme="omnigraph"] .badge[data-b="auto-built"]{ color: var(--violet-2)}
+
+/* ===== buttons ===== */
+[data-theme="omnigraph"] .btn{
+  font-family: var(--font-mono); font-size: 11.5px;
+  border-radius: 8px;
+  border: 1px solid var(--line-1);
+  background: rgba(255,255,255,0.03);
+  color: var(--ink-0);
+  cursor: pointer;
+  text-transform: lowercase; letter-spacing: 0.04em;
+  transition: all .15s var(--ease)}
+[data-theme="omnigraph"] .btn:hover{ background: var(--glass-hover); border-color: var(--line-2)}
+[data-theme="omnigraph"] .btn:disabled{ opacity: 0.4; cursor: not-allowed}
+[data-theme="omnigraph"] .btn .kbd{
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: var(--ink-3);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .btn-primary{
+  background: linear-gradient(180deg, rgba(232,144,96,0.32), rgba(129,140,248,0.18));
+  border-color: var(--violet-bd);
+  color: #ede9fe}
+[data-theme="omnigraph"] .btn-primary:hover{ border-color: var(--violet)}
+[data-theme="omnigraph"] .btn-ghost{
+  background: transparent;
+  border: 1px solid var(--line-0);
+  color: var(--ink-2)}
+[data-theme="omnigraph"] .btn-ghost:hover{ color: var(--ink-0); border-color: var(--line-2)}
+[data-theme="omnigraph"] .btn-danger{
+  background: transparent;
+  border: 1px solid var(--rose-bd);
+  color: var(--rose)}
+
+/* ===== Tweaks panel ===== */
+[data-theme="omnigraph"] .tweaks{
+  animation: tweaks-in .18s var(--ease)}
+@keyframes tweaks-in { from { transform: scale(.96) translateY(6px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+
+[data-theme="omnigraph"] .tweaks-head h4{ font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--violet-2);
+  font-weight: 600}
+[data-theme="omnigraph"] .tweaks-head .close{ background: transparent; border: 0; color: var(--ink-3); cursor: pointer; font-family: var(--font-mono); font-size: 10.5px}
+[data-theme="omnigraph"] .tweaks-head .close:hover{ color: var(--ink-0)}
+
+[data-theme="omnigraph"] .tweak-label{ font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.12em}
+
+[data-theme="omnigraph"] .tweak-chip{
+  font-family: var(--font-mono); font-size: 10.5px;
+  border: 1px solid var(--line-1);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.02);
+  color: var(--ink-2);
+  cursor: pointer; text-transform: lowercase;
+  transition: all .12s var(--ease)}
+[data-theme="omnigraph"] .tweak-chip:hover{ color: var(--ink-0); border-color: var(--line-2)}
+[data-theme="omnigraph"] .tweak-chip.on{
+  background: var(--violet-bg);
+  color: #ede9fe;
+  border-color: var(--violet-bd)}
+[data-theme="omnigraph"] .tweaks-foot{
+  border-top: 1px solid var(--line-0);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); text-transform: lowercase}
+
+/* ============================================================
+   HOME / Control Center
+   ============================================================ */
+
+
+
+[data-theme="omnigraph"] .home-kicker{
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--violet-2)}
+[data-theme="omnigraph"] .home-kicker::before{ content: "◇  "; color: var(--violet)}
+[data-theme="omnigraph"] .home-title{
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .home-title em{ color: var(--violet-2); font-style: italic; font-weight: 400}
+[data-theme="omnigraph"] .home-sub{
+  font-family: var(--font-serif);
+  font-size: 1.1rem; line-height: 1.5;
+  color: var(--ink-2);
+  font-weight: 300}
+
+
+[data-theme="omnigraph"] .home-identity{
+  background: var(--line-0);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2)}
+[data-theme="omnigraph"] .home-identity-cell{
+  background: var(--bg-1)}
+[data-theme="omnigraph"] .home-identity-label{
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-3)}
+[data-theme="omnigraph"] .home-identity-val{
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--ink-0);
+  background: transparent; border: 0;
+  text-align: left; cursor: pointer;
+  font-weight: 400}
+[data-theme="omnigraph"] .home-identity-val--static{ cursor: default}
+[data-theme="omnigraph"] .home-edit-hint{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); text-transform: lowercase;
+  opacity: 0; transition: opacity .15s}
+[data-theme="omnigraph"] .home-identity-val:hover .home-edit-hint{ opacity: 1}
+[data-theme="omnigraph"] .home-empty-inline{ color: var(--ink-3); font-style: italic; font-size: 0.95rem}
+
+
+[data-theme="omnigraph"] .home-section-head{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .home-section-head h2{
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  font-weight: 600}
+[data-theme="omnigraph"] .home-section-sub{
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--ink-3); text-transform: lowercase}
+
+[data-theme="omnigraph"] .home-active{ text-align: left;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-3);
+  cursor: pointer;
+  transition: all .18s var(--ease);
+  color: var(--ink-0);
+  font: inherit}
+[data-theme="omnigraph"] .home-active::before{
+  content: "";
+  background: linear-gradient(180deg, var(--violet), var(--cyan));
+  box-shadow: 0 0 20px var(--violet)}
+[data-theme="omnigraph"] .home-active:hover{
+  background: var(--glass-strong);
+  border-color: var(--violet-bd)}
+[data-theme="omnigraph"] .home-active-name{
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .home-active-meta{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-3); text-transform: lowercase;
+  letter-spacing: 0.06em}
+[data-theme="omnigraph"] .home-active-cta{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--violet-2); letter-spacing: 0.14em;
+  text-transform: uppercase}
+[data-theme="omnigraph"] .home-arrow{ transition: transform .15s var(--ease)}
+[data-theme="omnigraph"] .home-active:hover .home-arrow{ transform: translateX(4px)}
+
+
+[data-theme="omnigraph"] .home-proj{
+  background: var(--glass);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2);
+  transition: all .15s var(--ease)}
+[data-theme="omnigraph"] .home-proj:hover{ background: var(--glass-strong); border-color: var(--line-1)}
+[data-theme="omnigraph"] .home-proj-name{
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .home-proj-desc{
+  font-family: var(--font-serif);
+  font-size: 0.9rem; line-height: 1.5;
+  color: var(--ink-2)}
+
+
+[data-theme="omnigraph"] .home-create{
+  background: var(--glass);
+  border: 1px solid var(--violet-bd);
+  border-radius: var(--r-2)}
+[data-theme="omnigraph"] .home-create input, [data-theme="omnigraph"] .home-create textarea{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line-1);
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--ink-0);
+  outline: none;
+  resize: vertical}
+[data-theme="omnigraph"] .home-create input:focus, [data-theme="omnigraph"] .home-create textarea:focus{ border-color: var(--violet-bd); background: rgba(255,255,255,0.05)}
+
+[data-theme="omnigraph"] .home-create-hint{ font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); text-transform: lowercase}
+
+[data-theme="omnigraph"] .home-empty{
+  text-align: center;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-3); text-transform: lowercase;
+  background: var(--glass);
+  border: 1px dashed var(--line-1);
+  border-radius: var(--r-2)}
+
+[data-theme="omnigraph"] .home-shortcuts{
+  background: var(--line-0);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-2)}
+[data-theme="omnigraph"] .home-shortcut{
+  background: var(--bg-1);
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink-0);
+  font: inherit;
+  transition: background .14s var(--ease)}
+[data-theme="omnigraph"] .home-shortcut:hover{ background: rgba(232,144,96,0.06)}
+[data-theme="omnigraph"] .home-shortcut-label{
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .home-shortcut-hint{
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--ink-3); text-transform: lowercase}
+
+
+[data-theme="omnigraph"] .home-edit-row input{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--violet-bd);
+  border-radius: 6px;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--ink-0);
+  outline: none}
+
+[data-theme="omnigraph"] .home-foot{
+  border-top: 1px solid var(--line-0);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); text-transform: lowercase;
+  letter-spacing: 0.12em;
+  text-align: center}
+[data-theme="omnigraph"] .home-error{
+  background: var(--rose-bg);
+  border: 1px solid var(--rose-bd);
+  border-radius: 6px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--rose)}
+
+/* ============================================================
+   NOW
+   ============================================================ */
+
+
+
+/* bg work strip */
+[data-theme="omnigraph"] .bg-strip{
+  border-bottom: 1px solid var(--line-0);
+  background: rgba(255,255,255,0.015);
+  font-family: var(--font-mono)}
+
+[data-theme="omnigraph"] .bg-strip-label{
+  border-right: 1px solid var(--line-0);
+  background: rgba(232,144,96,0.06);
+  font-size: 10px; color: var(--violet-2);
+  text-transform: uppercase; letter-spacing: 0.16em}
+[data-theme="omnigraph"] .bg-strip-label .orb{ border-radius: 50%;
+  background: var(--violet);
+  box-shadow: 0 0 8px var(--violet);
+  animation: pulse 1.4s ease-in-out infinite}
+[data-theme="omnigraph"] .bg-strip-item{
+  border-right: 1px solid var(--line-0);
+  border-left: 3px solid var(--cyan);
+  font-family: var(--font-serif);
+  font-size: 0.85rem; line-height: 1.35;
+  color: var(--ink-1)}
+[data-theme="omnigraph"] .bg-strip-item[data-s="done"]{ border-left-color: var(--lime)}
+[data-theme="omnigraph"] .bg-strip-item[data-s="drift"]{ border-left-color: var(--amber)}
+[data-theme="omnigraph"] .bg-strip-item[data-s="in-progress"]{ border-left-color: var(--cyan)}
+[data-theme="omnigraph"] .bg-strip-item .bs-kind{
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: var(--ink-3);
+  text-transform: lowercase; letter-spacing: 0.06em}
+[data-theme="omnigraph"] .bg-strip-item .bs-kind .sep{ color: var(--ink-4)}
+[data-theme="omnigraph"] .bg-strip-item code{
+  font-family: var(--font-mono); font-size: 0.92em;
+  background: rgba(255,255,255,0.04); border-radius: 3px}
+
+/* chat */
+[data-theme="omnigraph"] .chat{
+  border-right: 1px solid var(--line-0);
+  background: rgba(255,255,255,0.012)}
+[data-theme="omnigraph"] .chat-head{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .chat-head .pickup-tag{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.14em}
+[data-theme="omnigraph"] .chat-head .pickup{
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem; line-height: 1.4;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .chat-head .pickup em{ color: var(--violet-2); font-style: italic}
+[data-theme="omnigraph"] .chat-head-meta{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); text-align: right;
+  text-transform: lowercase; letter-spacing: 0.06em}
+
+
+
+[data-theme="omnigraph"] .turn-label{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: lowercase; letter-spacing: 0.04em}
+[data-theme="omnigraph"] .turn-body{
+  font-family: var(--font-serif);
+  font-size: 0.96rem; line-height: 1.55;
+  color: var(--ink-1);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere}
+[data-theme="omnigraph"] .turn[data-role="founder"] .turn-label{ color: var(--violet-2); font-weight: 600}
+[data-theme="omnigraph"] .turn[data-role="founder"] .turn-body{
+  font-family: var(--font-serif);
+  background: var(--violet-bg);
+  border-left: 2px solid var(--violet);
+  border-radius: 3px;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .turn[data-role="agent"] .turn-label{ color: var(--cyan); font-weight: 600}
+
+[data-theme="omnigraph"] .turn[data-role="system"] .turn-body{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-3); font-style: italic;
+  border-top: 1px dashed var(--line-1)}
+
+[data-theme="omnigraph"] .chat-cursor{
+  background: var(--violet); vertical-align: text-bottom;
+  box-shadow: 0 0 6px var(--violet);
+  animation: blink .9s step-end infinite}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+[data-theme="omnigraph"] .chat-input{
+  border-top: 1px solid var(--line-0);
+  background: rgba(255,255,255,0.02)}
+[data-theme="omnigraph"] .chat-input textarea{
+  resize: none;
+  background: rgba(255,255,255,0.04);
+  color: var(--ink-0);
+  border: 1px solid var(--line-1);
+  border-radius: 8px;
+  font-family: var(--font-serif);
+  font-size: 0.95rem; line-height: 1.45;
+  outline: none}
+[data-theme="omnigraph"] .chat-input textarea:focus{
+  border-color: var(--violet-bd);
+  box-shadow: 0 0 0 3px rgba(232,144,96,0.15)}
+[data-theme="omnigraph"] .chat-input .send{
+  background: linear-gradient(180deg, rgba(232,144,96,0.32), rgba(129,140,248,0.18));
+  color: #ede9fe;
+  border: 1px solid var(--violet-bd);
+  border-radius: 8px;
+  font-family: var(--font-mono); font-size: 11px;
+  cursor: pointer; text-transform: lowercase;
+  letter-spacing: 0.06em}
+[data-theme="omnigraph"] .chat-input .send:hover{ border-color: var(--violet)}
+
+/* live canvas (right side of Now) */
+[data-theme="omnigraph"] .live-canvas{
+  background:
+    radial-gradient(circle at 50% 55%, rgba(232,144,96,0.06) 0%, transparent 60%),
+    rgba(0,0,0,0.15)}
+[data-theme="omnigraph"] .live-canvas-head{ pointer-events: none}
+[data-theme="omnigraph"] .live-canvas-head h3{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-1);
+  text-transform: uppercase; letter-spacing: 0.16em;
+  font-weight: 600}
+[data-theme="omnigraph"] .live-canvas-head .meta{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); pointer-events: auto; cursor: pointer;
+  text-transform: lowercase}
+[data-theme="omnigraph"] .live-canvas-head .meta:hover{ color: var(--violet-2)}
+[data-theme="omnigraph"] .live-canvas-foot{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: lowercase; letter-spacing: 0.04em;
+  pointer-events: none}
+
+/* the dotty constellation — pure CSS-positioned glowing nodes */
+[data-theme="omnigraph"] .live-dot{
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  border: 1.5px solid currentColor;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+  box-shadow: 0 0 10px currentColor}
+[data-theme="omnigraph"] .live-dot:hover{ transform: translate(-50%, -50%) scale(1.4); box-shadow: 0 0 18px currentColor}
+[data-theme="omnigraph"] .live-dot.selected{ background: currentColor; box-shadow: 0 0 24px currentColor}
+[data-theme="omnigraph"] .live-dot[data-b="done"]{ color: var(--lime)}
+[data-theme="omnigraph"] .live-dot[data-b="in-progress"]{ color: var(--cyan)}
+[data-theme="omnigraph"] .live-dot[data-b="drift"]{ color: var(--amber)}
+[data-theme="omnigraph"] .live-dot[data-b="blocked"]{ color: var(--pink)}
+[data-theme="omnigraph"] .live-dot[data-b="proposed"]{ color: var(--ink-2)}
+[data-theme="omnigraph"] .live-dot[data-b="auto"]{ color: var(--violet-2)}
+[data-theme="omnigraph"] .live-dot.pulse::before{
+  content: "";
+  border-radius: 50%; border: 1.5px solid currentColor;
+  animation: node-pulse 1.8s ease-out infinite}
+@keyframes node-pulse { 0%{opacity:.7;transform:scale(1)} 100%{opacity:0;transform:scale(1.6)} }
+
+[data-theme="omnigraph"] .live-center{
+  transform: translate(-50%, -50%);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(232,144,96,0.25), rgba(129,140,248,0.12));
+  border: 1px solid var(--violet-bd);
+  color: #ede9fe;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 0.92rem; text-align: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 24px rgba(232,144,96,0.3)}
+[data-theme="omnigraph"] .live-center .lc-kind{
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--violet-2);
+  text-transform: uppercase; letter-spacing: 0.16em; font-weight: 500;
+  opacity: 0.85}
+
+/* ring guides */
+[data-theme="omnigraph"] .ring-guide{
+  border: 1px dashed var(--line-1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none}
+[data-theme="omnigraph"] .ring-label{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-4);
+  background: var(--bg-0);
+  pointer-events: none;
+  text-transform: uppercase; letter-spacing: 0.14em}
+
+/* edges */
+[data-theme="omnigraph"] .edge-layer{ pointer-events: none}
+[data-theme="omnigraph"] .edge{
+  fill: none;
+  stroke: rgba(255,255,255,0.10);
+  stroke-width: 1;
+  opacity: 0.4}
+[data-theme="omnigraph"] .edge.hot{ stroke: var(--violet); opacity: 0.9; stroke-width: 1.5; filter: drop-shadow(0 0 4px var(--violet))}
+
+/* now footbar */
+[data-theme="omnigraph"] .now-footbar{
+  border-top: 1px solid var(--line-0);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); text-transform: lowercase;
+  background: rgba(255,255,255,0.015)}
+
+/* ============================================================
+   CANVAS (graph view)
+   ============================================================ */
+
+[data-theme="omnigraph"] .canvas-stage{
+  background:
+    radial-gradient(120% 80% at 50% 50%, rgba(232,144,96,0.04) 0%, transparent 60%)}
+[data-theme="omnigraph"] .kg-controls{
+  font-family: var(--font-mono); font-size: 11px}
+[data-theme="omnigraph"] .kg-controls button{
+  background: transparent; border: 0;
+  cursor: pointer;
+  color: var(--ink-1);
+  font-family: var(--font-mono); font-size: 12px;
+  border-radius: 4px}
+[data-theme="omnigraph"] .kg-controls button:hover{ background: rgba(255,255,255,0.06)}
+[data-theme="omnigraph"] .kg-controls .zoom-readout{ color: var(--ink-3)}
+
+[data-theme="omnigraph"] .kg-hint{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: lowercase; letter-spacing: 0.06em;
+  pointer-events: none}
+
+[data-theme="omnigraph"] .kg-node{
+  transform: translate(-50%, -50%);
+  cursor: pointer}
+[data-theme="omnigraph"] .kg-node.collapsed{
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  border: 1.5px solid currentColor;
+  box-shadow: 0 0 10px currentColor;
+  transition: transform .18s var(--ease), box-shadow .18s, border-width .18s}
+[data-theme="omnigraph"] .kg-node.collapsed:hover{
+  transform: translate(-50%, -50%) scale(1.45);
+  box-shadow: 0 0 22px currentColor}
+[data-theme="omnigraph"] .kg-node.collapsed .cube-dot{ border-radius: 50%; background: currentColor}
+[data-theme="omnigraph"] .kg-node[data-b="done"]{ color: var(--lime)}
+[data-theme="omnigraph"] .kg-node[data-b="in-progress"]{ color: var(--cyan)}
+[data-theme="omnigraph"] .kg-node[data-b="drift"]{ color: var(--amber)}
+[data-theme="omnigraph"] .kg-node[data-b="blocked"], [data-theme="omnigraph"] .kg-node[data-b="review"]{ color: var(--pink)}
+[data-theme="omnigraph"] .kg-node[data-b="proposed"]{ color: var(--ink-2)}
+[data-theme="omnigraph"] .kg-node[data-b="auto"]{ color: var(--violet-2)}
+[data-theme="omnigraph"] .kg-node[data-ring="0"].collapsed{
+  background: linear-gradient(180deg, rgba(232,144,96,0.4), rgba(129,140,248,0.15));
+  border-color: var(--violet); color: var(--violet-2);
+  box-shadow: 0 0 28px var(--violet)}
+
+
+
+
+[data-theme="omnigraph"] .kg-node.collapsed.pulse::after{
+  content: "";
+  border-radius: 50%; border: 1.5px solid currentColor;
+  animation: node-pulse 1.8s ease-out infinite;
+  pointer-events: none}
+
+[data-theme="omnigraph"] .cube-peek{
+  transform: translateX(-50%);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  backdrop-filter: blur(14px);
+  font-family: var(--font-sans); font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+  opacity: 0; visibility: hidden;
+  transition: opacity .12s var(--ease), visibility 0s .12s}
+[data-theme="omnigraph"] .kg-node:hover .cube-peek{ opacity: 1; visibility: visible; transition: opacity .12s var(--ease), visibility 0s 0s}
+[data-theme="omnigraph"] .cube-peek .peek-kind{
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.14em}
+[data-theme="omnigraph"] .cube-peek .peek-intent{
+  font-family: var(--font-serif); font-size: 13px;
+  color: var(--ink-0);
+  line-height: 1.3}
+[data-theme="omnigraph"] .cube-peek .peek-foot{
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: var(--ink-3)}
+
+/* ring guides on full canvas — wider */
+[data-theme="omnigraph"] .canvas-stage .ring-guide{ border-color: rgba(255,255,255,0.06)}
+
+/* node detail drawer */
+[data-theme="omnigraph"] .drawer{
+  background: rgba(10,20,32,0.85);
+  border-left: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px) saturate(120%);
+  animation: drawer-in .2s var(--ease)}
+@keyframes drawer-in { from{transform:translateX(20px);opacity:0} to{transform:translateX(0);opacity:1} }
+[data-theme="omnigraph"] .drawer-head{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .drawer-head .close{
+  background: transparent;
+  border: 1px solid var(--line-1);
+  border-radius: 4px;
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); cursor: pointer;
+  text-transform: lowercase}
+[data-theme="omnigraph"] .drawer-head .close:hover{ color: var(--ink-0); border-color: var(--line-2)}
+
+[data-theme="omnigraph"] .drawer-intent{
+  font-family: var(--font-serif);
+  font-size: 1.4rem; font-weight: 500;
+  line-height: 1.25;
+  color: var(--ink-0);
+  letter-spacing: -0.01em}
+[data-theme="omnigraph"] .drawer-sub{
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--ink-3);
+  text-transform: lowercase}
+[data-theme="omnigraph"] .drawer-sub code{
+  font-size: 10px;
+  background: rgba(255,255,255,0.04); border-radius: 3px;
+  color: var(--ink-1)}
+
+[data-theme="omnigraph"] .drawer-section-title{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.14em;
+  border-bottom: 1px solid var(--line-0)}
+
+
+[data-theme="omnigraph"] .plan{
+  font-family: var(--font-serif);
+  font-size: 0.94rem; line-height: 1.65;
+  color: var(--ink-1)}
+[data-theme="omnigraph"] .plan h1, [data-theme="omnigraph"] .plan h2, [data-theme="omnigraph"] .plan h3{
+  font-family: var(--font-serif);
+  color: var(--violet-2); font-weight: 500;
+  letter-spacing: -0.01em}
+[data-theme="omnigraph"] .plan h1{ font-size: 1.2rem}
+[data-theme="omnigraph"] .plan h2{ font-size: 1.08rem}
+[data-theme="omnigraph"] .plan h3{ font-size: 0.98rem}
+
+
+
+[data-theme="omnigraph"] .plan code{
+  font-family: var(--font-mono); font-size: 0.86em;
+  background: rgba(255,255,255,0.05); border-radius: 3px;
+  color: var(--cyan-2)}
+
+/* ============================================================
+   BRAIN
+   ============================================================ */
+
+@media (max-width: 1120px) {  }
+@media (max-width: 940px)  {   }
+[data-theme="omnigraph"] .brain-nav{
+  border-right: 1px solid var(--line-0);
+  background: rgba(255,255,255,0.012)}
+[data-theme="omnigraph"] .brain-nav .group-title{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.14em;
+  font-weight: 600}
+[data-theme="omnigraph"] .brain-nav .brain-file{
+  border: 0; background: transparent;
+  font-family: var(--font-mono); font-size: 11.5px;
+  color: var(--ink-2);
+  cursor: pointer; text-align: left;
+  transition: all .12s var(--ease)}
+[data-theme="omnigraph"] .brain-nav .brain-file:hover{ background: rgba(255,255,255,0.03); color: var(--ink-0)}
+[data-theme="omnigraph"] .brain-nav .brain-file.active{
+  background: var(--violet-bg);
+  color: var(--violet-2);
+  border-left: 2px solid var(--violet)}
+[data-theme="omnigraph"] .brain-nav .brain-file .f-status{ border-radius: 50%;
+  background: var(--ink-4)}
+[data-theme="omnigraph"] .brain-nav .brain-file .f-status[data-s="done"]{ background: var(--lime); box-shadow: 0 0 6px var(--lime)}
+[data-theme="omnigraph"] .brain-nav .brain-file .f-status[data-s="wip"]{ background: var(--cyan); box-shadow: 0 0 6px var(--cyan)}
+[data-theme="omnigraph"] .brain-nav .brain-file .f-status[data-s="primary"]{ background: var(--violet); box-shadow: 0 0 6px var(--violet)}
+
+
+[data-theme="omnigraph"] .brain-doc .kicker{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.18em}
+[data-theme="omnigraph"] .brain-doc .title{
+  font-family: var(--font-serif); font-weight: 400;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  letter-spacing: -0.02em;
+  color: var(--ink-0);
+  line-height: 1.1}
+[data-theme="omnigraph"] .brain-doc .sub{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-3); text-transform: lowercase;
+  letter-spacing: 0.08em}
+[data-theme="omnigraph"] .brain-doc .stars{
+  font-family: var(--font-serif); font-size: 1rem;
+  color: var(--violet-2)}
+[data-theme="omnigraph"] .brain-doc .prose{
+  font-family: var(--font-serif);
+  font-size: 1rem; line-height: 1.7;
+  color: var(--ink-1)}
+[data-theme="omnigraph"] .brain-doc .prose h2{
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: 1.2rem;
+  color: var(--violet-2);
+  letter-spacing: -0.01em}
+
+
+
+[data-theme="omnigraph"] .brain-doc .prose blockquote{
+  border-left: 2px solid var(--violet);
+  background: var(--violet-bg);
+  font-style: italic;
+  color: var(--ink-0);
+  border-radius: 0 4px 4px 0}
+[data-theme="omnigraph"] .brain-doc .prose strong{ color: var(--ink-0); font-weight: 600}
+[data-theme="omnigraph"] .brain-doc .prose em{ font-style: italic; color: var(--ink-0)}
+[data-theme="omnigraph"] .brain-doc .prose code{
+  font-family: var(--font-mono); font-size: 0.86em;
+  background: rgba(255,255,255,0.05); border-radius: 3px;
+  color: var(--cyan-2)}
+
+[data-theme="omnigraph"] .brain-verdict{
+  border-left: 1px solid var(--line-0);
+  background: rgba(255,255,255,0.012)}
+[data-theme="omnigraph"] .brain-verdict .kicker{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--violet-2);
+  text-transform: uppercase; letter-spacing: 0.16em}
+[data-theme="omnigraph"] .brain-verdict h3{
+  font-family: var(--font-serif);
+  font-weight: 400; font-size: 1.4rem;
+  letter-spacing: -0.01em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .brain-verdict .verdict-tag{
+  border-radius: 999px;
+  background: var(--lime-bg);
+  color: var(--lime);
+  font-family: var(--font-mono); font-size: 10px;
+  text-transform: lowercase; letter-spacing: 0.06em;
+  border: 1px solid var(--lime-bd)}
+[data-theme="omnigraph"] .brain-verdict p{
+  font-family: var(--font-serif); font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ink-1)}
+[data-theme="omnigraph"] .brain-verdict .q-block{
+  background: var(--violet-bg);
+  border-left: 2px solid var(--violet);
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 0.88rem; line-height: 1.55;
+  color: var(--ink-0);
+  border-radius: 0 4px 4px 0}
+[data-theme="omnigraph"] .brain-verdict .file-stats{
+  border-top: 1px solid var(--line-0);
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.1em}
+[data-theme="omnigraph"] .brain-verdict .file-stats b{ color: var(--ink-0); font-size: 16px; letter-spacing: 0; font-family: var(--font-serif); font-weight: 500}
+
+/* ============================================================
+   APPROVALS
+   ============================================================ */
+
+[data-theme="omnigraph"] .approvals-list{
+  border-right: 1px solid var(--line-0);
+  background: rgba(255,255,255,0.012)}
+[data-theme="omnigraph"] .approvals-list-head{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .approvals-list-head h2{
+  font-family: var(--font-serif); font-weight: 400;
+  font-size: 1.6rem; letter-spacing: -0.02em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .approvals-list-head .sub{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-3);
+  text-transform: lowercase; letter-spacing: 0.08em}
+
+[data-theme="omnigraph"] .approval-filter{
+  font-family: var(--font-mono); font-size: 10px;
+  border: 1px solid var(--line-1);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer; text-transform: lowercase}
+[data-theme="omnigraph"] .approval-filter.on{
+  background: var(--violet-bg);
+  color: #ede9fe;
+  border-color: var(--violet-bd)}
+[data-theme="omnigraph"] .approval-item{
+  border-bottom: 1px solid var(--line-0);
+  cursor: pointer;
+  transition: background .12s var(--ease)}
+[data-theme="omnigraph"] .approval-item:hover{ background: rgba(255,255,255,0.025)}
+[data-theme="omnigraph"] .approval-item.sel{
+  background: rgba(232,144,96,0.07);
+  border-left: 2px solid var(--violet)}
+
+[data-theme="omnigraph"] .approval-item-route{
+  font-family: var(--font-mono); font-size: 9.5px; border-radius: 999px;
+  text-transform: lowercase; letter-spacing: 0.04em;
+  border: 1px solid currentColor}
+[data-theme="omnigraph"] .approval-item-route[data-k="technical"]{ color: var(--cyan)}
+[data-theme="omnigraph"] .approval-item-route[data-k="business"]{ color: var(--violet-2)}
+[data-theme="omnigraph"] .approval-item-route[data-k="mixed"]{ color: var(--pink)}
+[data-theme="omnigraph"] .approval-item-title{
+  font-family: var(--font-serif); font-size: 1rem;
+  line-height: 1.35;
+  color: var(--ink-0);
+  font-weight: 400}
+[data-theme="omnigraph"] .approval-item-sub{
+  font-family: var(--font-serif); font-size: 0.86rem;
+  color: var(--ink-2); -webkit-line-clamp: 2; -webkit-box-orient: vertical}
+[data-theme="omnigraph"] .approval-item-age{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3)}
+
+[data-theme="omnigraph"] .approval-detail .kicker{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.16em}
+[data-theme="omnigraph"] .approval-detail h1{
+  font-family: var(--font-serif); font-weight: 400;
+  font-size: 2.4rem; line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .approval-detail .lede{
+  font-family: var(--font-serif); font-size: 1.1rem;
+  line-height: 1.55;
+  color: var(--ink-1);
+  font-weight: 300}
+
+[data-theme="omnigraph"] .approval-detail .label{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.14em}
+[data-theme="omnigraph"] .approval-detail .evidence-text{
+  font-family: var(--font-serif); font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--ink-1)}
+[data-theme="omnigraph"] .approval-route-card{
+  background: var(--glass);
+  border: 1px solid var(--line-0);
+  border-left: 2px solid var(--violet);
+  border-radius: 8px}
+[data-theme="omnigraph"] .approval-route-card .who{
+  font-family: var(--font-serif); font-size: 1.08rem;
+  font-weight: 500;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .approval-route-card .why{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-3); text-transform: lowercase}
+
+[data-theme="omnigraph"] .approval-actions button{
+  font-family: var(--font-mono); font-size: 11px;
+  border-radius: 8px; cursor: pointer;
+  text-transform: lowercase; letter-spacing: 0.06em}
+[data-theme="omnigraph"] .approval-actions .approve{
+  background: linear-gradient(180deg, rgba(163,230,53,0.28), rgba(132,204,22,0.14));
+  color: #ecfccb;
+  border: 1px solid var(--lime-bd)}
+[data-theme="omnigraph"] .approval-actions .approve:hover{ border-color: var(--lime)}
+[data-theme="omnigraph"] .approval-actions .concerns{
+  background: transparent;
+  color: var(--ink-1);
+  border: 1px solid var(--line-1)}
+[data-theme="omnigraph"] .approval-actions .concerns:hover{ border-color: var(--line-2)}
+[data-theme="omnigraph"] .approval-actions .reject{
+  background: transparent;
+  color: var(--rose);
+  border: 1px solid var(--rose-bd)}
+[data-theme="omnigraph"] .approval-actions .discuss{
+  background: transparent;
+  color: var(--ink-3);
+  border: 1px dashed var(--line-1)}
+
+/* ============================================================
+   WORLD
+   ============================================================ */
+
+
+[data-theme="omnigraph"] .world-head .kicker{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--violet-2);
+  text-transform: uppercase; letter-spacing: 0.18em}
+[data-theme="omnigraph"] .world-head .kicker::before{ content: "◇  "; color: var(--violet)}
+[data-theme="omnigraph"] .world-head h1{
+  font-family: var(--font-serif); font-weight: 400;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 1.1; letter-spacing: -0.02em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .world-head .sub{
+  font-family: var(--font-serif); font-size: 1.1rem;
+  font-style: italic; color: var(--ink-2);
+  line-height: 1.4;
+  font-weight: 300}
+
+[data-theme="omnigraph"] .world-item{
+  border-top: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .world-item:first-child{ border-top: 1px solid var(--ink-3)}
+[data-theme="omnigraph"] .world-item-meta{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: lowercase; letter-spacing: 0.06em}
+[data-theme="omnigraph"] .world-item-meta .source{
+  color: var(--ink-1);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 11px}
+[data-theme="omnigraph"] .world-item-meta .when{ color: var(--ink-3)}
+[data-theme="omnigraph"] .world-item-meta .watcher{ color: var(--violet-2); font-size: 10px}
+[data-theme="omnigraph"] .world-item-meta .sev{ border-radius: 999px;
+  font-size: 9.5px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 12%, transparent)}
+[data-theme="omnigraph"] .world-item-meta .sev[data-s="high"]{ color: var(--rose)}
+[data-theme="omnigraph"] .world-item-meta .sev[data-s="medium"]{ color: var(--amber)}
+[data-theme="omnigraph"] .world-item-meta .sev[data-s="low"]{ color: var(--ink-3)}
+[data-theme="omnigraph"] .world-item h3{
+  font-family: var(--font-serif); font-size: 1.4rem;
+  font-weight: 400; letter-spacing: -0.01em;
+  color: var(--ink-0); line-height: 1.25}
+[data-theme="omnigraph"] .world-item p.body{
+  font-family: var(--font-serif); font-size: 0.96rem;
+  line-height: 1.6;
+  color: var(--ink-1);
+  font-weight: 300}
+[data-theme="omnigraph"] .world-item .why{
+  background: var(--violet-bg);
+  border-left: 2px solid var(--violet);
+  border-radius: 0 4px 4px 0;
+  font-family: var(--font-serif); font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .world-item .why .why-label{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--violet-2);
+  text-transform: uppercase; letter-spacing: 0.14em}
+[data-theme="omnigraph"] .world-item .why code{
+  font-family: var(--font-mono);
+  background: rgba(255,255,255,0.05); border-radius: 3px;
+  font-size: 0.9em;
+  color: var(--cyan-2)}
+
+/* ============================================================
+   REFLECT
+   ============================================================ */
+
+[data-theme="omnigraph"] .reflection-head{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .reflection-head .kicker{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--violet-2);
+  text-transform: uppercase; letter-spacing: 0.18em}
+[data-theme="omnigraph"] .reflection-head h1{
+  font-family: var(--font-serif); font-weight: 400;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  letter-spacing: -0.02em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .reflection-head .sub{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-3); text-transform: lowercase;
+  letter-spacing: 0.08em}
+
+
+[data-theme="omnigraph"] .reflection-item{
+  background: transparent;
+  border: 0;
+  border-left: 2px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit; color: var(--ink-2);
+  transition: all .12s var(--ease)}
+[data-theme="omnigraph"] .reflection-item:hover{ background: rgba(255,255,255,0.025); color: var(--ink-0)}
+[data-theme="omnigraph"] .reflection-item.sel{
+  background: var(--violet-bg);
+  border-left-color: var(--violet);
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .reflection-item-time{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3); text-transform: lowercase}
+[data-theme="omnigraph"] .reflection-item-summary{
+  font-family: var(--font-serif); font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--ink-1)}
+[data-theme="omnigraph"] .reflection-item-meta{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--ink-3);
+  text-transform: lowercase; letter-spacing: 0.04em}
+
+
+[data-theme="omnigraph"] .reflection-doc .doc-h{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .reflection-doc .doc-h h2{
+  font-family: var(--font-serif); font-weight: 400;
+  font-size: 1.6rem; letter-spacing: -0.01em;
+  color: var(--ink-0)}
+[data-theme="omnigraph"] .reflection-doc .lens{
+  border-top: 1px dashed var(--line-1)}
+[data-theme="omnigraph"] .reflection-doc .lens:first-of-type{ border-top: 0}
+
+[data-theme="omnigraph"] .reflection-doc .lens-num{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--violet-2);
+  letter-spacing: 0.18em}
+[data-theme="omnigraph"] .reflection-doc .lens-name{
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: 1.15rem;
+  color: var(--ink-0);
+  letter-spacing: -0.01em}
+[data-theme="omnigraph"] .reflection-doc .lens-body{
+  font-family: var(--font-serif); font-size: 0.96rem;
+  line-height: 1.65; color: var(--ink-1);
+  font-weight: 300}
+[data-theme="omnigraph"] .reflection-doc .lens-body strong{ color: var(--ink-0); font-weight: 600}
+[data-theme="omnigraph"] .reflection-doc .lens-body em{ font-style: italic; color: var(--ink-0)}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+
+[data-theme="omnigraph"] .settings-head{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .settings-head .kicker{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--violet-2);
+  text-transform: uppercase; letter-spacing: 0.18em}
+[data-theme="omnigraph"] .settings-head h1{
+  font-family: var(--font-serif); font-weight: 400;
+  font-size: 2.2rem; letter-spacing: -0.02em;
+  color: var(--ink-0)}
+
+[data-theme="omnigraph"] .settings-section-h{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-2);
+  text-transform: uppercase; letter-spacing: 0.16em;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .settings-row{
+  border-bottom: 1px solid var(--line-0)}
+[data-theme="omnigraph"] .settings-row:last-child{ border-bottom: 0}
+[data-theme="omnigraph"] .settings-row .row-label{
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--ink-2);
+  text-transform: lowercase; letter-spacing: 0.06em}
+[data-theme="omnigraph"] .settings-row .row-val{
+  font-family: var(--font-serif); font-size: 1rem;
+  color: var(--ink-0)}
+
+/* ============================================================
+   Glassmorphism appendix — ensures every panel surface across
+   the app gets a backdrop-blur glass treatment when omnigraph is
+   the active theme. Targets surfaces the sample didn't explicitly
+   skin (or that paper-theme rules in design.css would otherwise
+   leak warm colors through).
+   ============================================================ */
+
+[data-theme="omnigraph"] .view {
+  background: transparent}
+
+/* Generic glass surface — applied to panels, cards, drawers that
+   don't already have a more specific rule above. */
+[data-theme="omnigraph"] .glass-pane,
+[data-theme="omnigraph"] .now-body,
+[data-theme="omnigraph"] .chat,
+[data-theme="omnigraph"] .bg-strip,
+[data-theme="omnigraph"] .live-canvas,
+[data-theme="omnigraph"] .brain-nav,
+[data-theme="omnigraph"] .brain-doc,
+[data-theme="omnigraph"] .brain-verdict,
+[data-theme="omnigraph"] .canvas-root,
+[data-theme="omnigraph"] .canvas-stage,
+[data-theme="omnigraph"] .approvals-root,
+[data-theme="omnigraph"] .world-root,
+[data-theme="omnigraph"] .reflect-root,
+[data-theme="omnigraph"] .settings-root {
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%)}
+
+/* Strong glass for raised cards / interactive panels */
+[data-theme="omnigraph"] .home-section,
+[data-theme="omnigraph"] .welcome-card,
+[data-theme="omnigraph"] .onb-card,
+[data-theme="omnigraph"] .settings-card,
+[data-theme="omnigraph"] .approvals-card,
+[data-theme="omnigraph"] .reflect-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%)}
+
+/* Soft hairline glass on input/textarea backgrounds so warm-paper
+   defaults don't leak into form fields. */
+[data-theme="omnigraph"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="omnigraph"] textarea,
+[data-theme="omnigraph"] select {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--ink-0)}
+[data-theme="omnigraph"] input:focus,
+[data-theme="omnigraph"] textarea:focus,
+[data-theme="omnigraph"] select:focus {
+  border-color: var(--violet-bd);
+  outline: none;
+  background: rgba(255,255,255,0.05)}
+
+/* Onboarding / WelcomeBack / Join — these screens don't use the
+   shell, so their root elements need their own dark stage so the
+   stage-bg from main.tsx shows through cleanly. */
+[data-theme="omnigraph"] .onb,
+[data-theme="omnigraph"] .join-root,
+[data-theme="omnigraph"] .welcome-root {
+  background: transparent;
+  color: var(--ink-0)}
+
+/* Force-recolor any leftover paper-token references on omnigraph */
+[data-theme="omnigraph"] {
+  --a-page:    var(--bg-0);
+  --a-paper:   rgba(255,255,255,0.03);
+  --a-paper-2: rgba(255,255,255,0.05);
+  --a-paper-3: rgba(255,255,255,0.07);
+  --a-line:    rgba(255,255,255,0.10);
+  --a-line-2:  rgba(255,255,255,0.14);
+  --a-ink:     var(--ink-0);
+  --a-ink-2:   var(--ink-1);
+  --a-mute:    var(--ink-2);
+  --a-mute-2:  var(--ink-3);
+  --a-faint:   var(--ink-4);
+  --a-accent:      var(--violet);
+  --a-accent-2:    var(--violet-2);
+  --a-accent-soft: var(--violet-bg)}
+
+/* ============================================================
+   Top-panel visibility fix — explicit text colors so the ribbon
+   and brand stay legible against the dark stage. Without these,
+   design.css's color: var(--a-ink) (warm dark) leaks through on
+   surfaces where the token bridge isn't enough.
+   ============================================================ */
+[data-theme="omnigraph"] .brand,
+[data-theme="omnigraph"] .ribbon {
+  color: var(--ink-1);
+  background: rgba(255,255,255,0.025);
+  border-color: rgba(255,255,255,0.08);
+}
+[data-theme="omnigraph"] .ribbon-crumb .proj { color: var(--ink-0); }
+[data-theme="omnigraph"] .ribbon-crumb .proj-sub { color: var(--ink-2); }
+[data-theme="omnigraph"] .ribbon-session,
+[data-theme="omnigraph"] .ribbon-crumb-meta { color: var(--ink-2); }
+[data-theme="omnigraph"] .ribbon-tokens b { color: var(--ink-0); }
+[data-theme="omnigraph"] .ribbon-role {
+  color: var(--ink-0);
+  background: rgba(232,144,96,0.10);
+  border-color: rgba(232,144,96,0.30);
+}
+[data-theme="omnigraph"] .ribbon-role .dot {
+  background: var(--violet);
+  box-shadow: 0 0 6px var(--violet);
+}
+[data-theme="omnigraph"] .ribbon-tweaks {
+  color: var(--ink-2);
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.10);
+}
+[data-theme="omnigraph"] .ribbon-tweaks:hover {
+  color: var(--ink-0);
+  border-color: rgba(255,255,255,0.20);
+}
+[data-theme="omnigraph"] .ribbon-divider { background: rgba(255,255,255,0.10); }
+
+/* Rail items — same risk if design.css color leaks */
+[data-theme="omnigraph"] .rail { background: transparent; }
+[data-theme="omnigraph"] .rail-item { color: var(--ink-2); }
+[data-theme="omnigraph"] .rail-item:hover { color: var(--ink-0); }
+[data-theme="omnigraph"] .rail-item.active { color: var(--violet-2); }
+[data-theme="omnigraph"] .rail-foot { color: var(--ink-2); } /* AA-pass at 9.5px */
+
+/* Body-level safety net */
+[data-theme="omnigraph"] body,
+[data-theme="omnigraph"] .shell {
+  color: var(--ink-0);
+}
+
+/* ============================================================
+   Stacking context fix — restore the z-index that the layout-
+   strip removed from container roots. Without these, .stage-bg
+   (position:fixed, z-index:0) paints OVER the document content,
+   which renders text behind the dark overlay (invisible).
+   ============================================================ */
+[data-theme="omnigraph"] .stage-bg { z-index: -1; }
+[data-theme="omnigraph"] .shell,
+[data-theme="omnigraph"] .onb,
+[data-theme="omnigraph"] .welcome-root,
+[data-theme="omnigraph"] .join-root {
+  position: relative;
+  z-index: 1;
+}
+[data-theme="omnigraph"] .lp { z-index: 1; }
+
+/* WelcomeBack card was glass-skinned but its descendant text colors
+   weren't pinned to the omnigraph palette — explicit colors so the
+   card content reads on dark glass. */
+[data-theme="omnigraph"] .welcome-card,
+[data-theme="omnigraph"] .onb-card { color: var(--ink-0); }
+[data-theme="omnigraph"] .welcome-line .welcome-label,
+[data-theme="omnigraph"] .welcome-foot,
+[data-theme="omnigraph"] .onb-tagline { color: var(--ink-2); }
+[data-theme="omnigraph"] .welcome-line .welcome-val,
+[data-theme="omnigraph"] .welcome-copy,
+[data-theme="omnigraph"] .onb-card h2,
+[data-theme="omnigraph"] .onb-card label { color: var(--ink-0); }
+[data-theme="omnigraph"] .onb-brand { color: var(--violet-2); }
+[data-theme="omnigraph"] .welcome-error { color: var(--rose); }
+
+/* ============================================================
+   Button skinning — design.css buttons reference (--a-ink) for
+   bg + (--a-paper) for text, which the token bridge inverted on
+   omnigraph (white bg, transparent text → invisible label).
+   Pin them explicitly to the orange/glass palette here.
+   ============================================================ */
+[data-theme="omnigraph"] .onb-card button.primary,
+[data-theme="omnigraph"] .welcome-primary,
+[data-theme="omnigraph"] button.primary {
+  background: linear-gradient(135deg, var(--violet) 0%, #C4663A 100%);
+  color: #170c05;
+  border: 1px solid rgba(255,255,255,0.16);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.18) inset,
+    0 12px 28px -10px rgba(232,144,96,0.45);
+}
+[data-theme="omnigraph"] .onb-card button.primary:hover:not(:disabled),
+[data-theme="omnigraph"] .welcome-primary:hover:not(:disabled),
+[data-theme="omnigraph"] button.primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+[data-theme="omnigraph"] .welcome-fresh {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--ink-1);
+}
+[data-theme="omnigraph"] .welcome-fresh:hover:not(:disabled) {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.18);
+  color: var(--ink-0);
+}
+
+/* Generic ghost / secondary button skinning */
+[data-theme="omnigraph"] button.secondary,
+[data-theme="omnigraph"] button.ghost,
+[data-theme="omnigraph"] .home-btn-ghost,
+[data-theme="omnigraph"] .home-btn {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.10);
+  color: var(--ink-1);
+}
+[data-theme="omnigraph"] button.secondary:hover:not(:disabled),
+[data-theme="omnigraph"] button.ghost:hover:not(:disabled),
+[data-theme="omnigraph"] .home-btn-ghost:hover:not(:disabled),
+[data-theme="omnigraph"] .home-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.07);
+  color: var(--ink-0);
+}
+
+/* danger */
+[data-theme="omnigraph"] button.danger {
+  background: rgba(244,63,94,0.10);
+  border-color: rgba(244,63,94,0.30);
+  color: var(--rose);
+}
+
+/* now-start-btn — design.css uses color: var(--a-paper), which the token
+   bridge maps to a translucent white. On the orange button background that
+   leaves the label invisible. Pin a dark text color so "start now" reads. */
+[data-theme="omnigraph"] .now-start-btn {
+  color: #170c05;
+  font-weight: 600;
+  border-color: rgba(255,255,255,0.18);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.18) inset,
+    0 12px 24px -10px rgba(232,144,96,0.45);
+}
+[data-theme="omnigraph"] .now-start-btn:hover {
+  filter: brightness(1.05);
+  color: #170c05;
+}
+[data-theme="omnigraph"] .now-start-dot {
+  background: #170c05;
+  box-shadow: 0 0 0 0 rgba(23,12,5,0.5);
+}
+
+/* ============================================================
+   Implementer Live Feed — omnigraph variant
+   Glass broadcast panel; phase-color luminous glyphs.
+   ============================================================ */
+
+[data-theme="omnigraph"] .impl-feed {
+  border-bottom: 1px solid var(--line-1);
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(232,144,96,0.08), transparent 60%),
+    linear-gradient(180deg, rgba(232,144,96,0.025), transparent 30%),
+    var(--glass);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  color: var(--ink-1);
+  overflow-y: auto;
+  position: relative;
+}
+[data-theme="omnigraph"] .impl-feed::-webkit-scrollbar { width: 6px; }
+[data-theme="omnigraph"] .impl-feed::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+
+[data-theme="omnigraph"] .impl-feed-header {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 14px 28px 12px;
+  background: linear-gradient(180deg, var(--bg-1) 0%, color-mix(in srgb, var(--bg-1) 88%, transparent));
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line-0);
+}
+[data-theme="omnigraph"] .impl-feed-title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem; font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+  font-feature-settings: "ss01", "ss02";
+}
+[data-theme="omnigraph"] .impl-feed-status {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+[data-theme="omnigraph"] .impl-feed-status::before { background: var(--ink-3); box-shadow: none; animation: none; }
+[data-theme="omnigraph"] .impl-feed-status[data-connected="true"]::before {
+  background: var(--lime); box-shadow: 0 0 8px var(--lime);
+  animation: impl-feed-livedot 2s ease-in-out infinite;
+}
+
+[data-theme="omnigraph"] .impl-feed-empty {
+  font-family: var(--font-serif); font-style: italic;
+  color: var(--ink-3); font-size: 0.95rem;
+}
+
+[data-theme="omnigraph"] .impl-feed-list { padding: 4px 0; }
+
+[data-theme="omnigraph"] .impl-feed-row { border-bottom: 1px solid var(--line-0); }
+[data-theme="omnigraph"] .impl-feed-row:last-child { border-bottom: none; }
+[data-theme="omnigraph"] .impl-feed-row::before { background: transparent; }
+[data-theme="omnigraph"] .impl-feed-row.is-allocator::before  { background: var(--cyan);   box-shadow: 0 0 12px var(--cyan); }
+[data-theme="omnigraph"] .impl-feed-row.is-writing::before    { background: var(--amber);  box-shadow: 0 0 14px var(--amber); }
+[data-theme="omnigraph"] .impl-feed-row.is-verifying::before  { background: var(--violet); box-shadow: 0 0 12px var(--violet); }
+[data-theme="omnigraph"] .impl-feed-row.is-completed::before  { background: var(--lime);   box-shadow: 0 0 12px var(--lime); }
+[data-theme="omnigraph"] .impl-feed-row.is-blocked::before    { background: var(--rose);   box-shadow: 0 0 14px var(--rose); }
+
+[data-theme="omnigraph"] .impl-feed-rowhead { padding: 12px 28px; color: var(--ink-1); }
+[data-theme="omnigraph"] .impl-feed-rowhead:hover { background: var(--glass-hover); }
+[data-theme="omnigraph"] .impl-feed-rowhead:focus-visible { outline: 1px solid var(--violet); outline-offset: -3px; }
+
+[data-theme="omnigraph"] .impl-feed-dot { width: 7px; height: 7px; border-radius: 1px; background: var(--ink-4); box-shadow: none; }
+[data-theme="omnigraph"] .impl-feed-dot[data-phase="started"]   { background: var(--cyan-2);   box-shadow: 0 0 8px var(--cyan); }
+[data-theme="omnigraph"] .impl-feed-dot[data-phase="allocator"] { background: var(--cyan);     box-shadow: 0 0 10px var(--cyan); }
+[data-theme="omnigraph"] .impl-feed-dot[data-phase="writing"]   { background: var(--amber);    box-shadow: 0 0 14px var(--amber); }
+[data-theme="omnigraph"] .impl-feed-dot[data-phase="verifying"] { background: var(--violet-2); box-shadow: 0 0 10px var(--violet); }
+[data-theme="omnigraph"] .impl-feed-dot[data-phase="completed"] { background: var(--lime);     box-shadow: 0 0 10px var(--lime); }
+[data-theme="omnigraph"] .impl-feed-dot[data-phase="blocked"]   { background: var(--rose);     box-shadow: 0 0 14px var(--rose); }
+
+[data-theme="omnigraph"] .impl-feed-label { color: var(--ink-0); font-family: var(--font-sans); }
+[data-theme="omnigraph"] .impl-feed-label::before { color: var(--ink-3); }
+
+[data-theme="omnigraph"] .impl-feed-pill {
+  border: 1px solid var(--glass-border);
+  background: var(--glass); color: var(--ink-2);
+}
+[data-theme="omnigraph"] .impl-feed-pill[data-phase="started"]   { background: var(--cyan-bg);   color: var(--cyan-2);   border-color: var(--cyan-bd); }
+[data-theme="omnigraph"] .impl-feed-pill[data-phase="allocator"] { background: var(--cyan-bg);   color: var(--cyan-2);   border-color: var(--cyan-bd); }
+[data-theme="omnigraph"] .impl-feed-pill[data-phase="writing"]   { background: var(--amber-bg);  color: var(--amber);    border-color: var(--amber-bd); }
+[data-theme="omnigraph"] .impl-feed-pill[data-phase="verifying"] { background: var(--violet-bg); color: var(--violet-2); border-color: var(--violet-bd); }
+[data-theme="omnigraph"] .impl-feed-pill[data-phase="completed"] { background: var(--lime-bg);   color: var(--lime);     border-color: var(--lime-bd); }
+[data-theme="omnigraph"] .impl-feed-pill[data-phase="blocked"]   { background: var(--rose-bg);   color: var(--rose);     border-color: var(--rose-bd); }
+
+[data-theme="omnigraph"] .impl-feed-meta {
+  font-family: var(--font-mono);
+  color: var(--ink-3); font-variant-numeric: tabular-nums;
+}
+
+[data-theme="omnigraph"] .impl-feed-body {
+  background: var(--glass-strong);
+  border-top: 1px solid var(--line-0);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+[data-theme="omnigraph"] .impl-feed-section-title { color: var(--ink-3); }
+[data-theme="omnigraph"] .impl-feed-section-body { color: var(--ink-1); font-family: var(--font-sans); }
+[data-theme="omnigraph"] .impl-feed-section-blocked .impl-feed-section-body { color: var(--rose-2, var(--rose)); }
+[data-theme="omnigraph"] .impl-feed-conf { color: var(--ink-3); }
+[data-theme="omnigraph"] .impl-feed-reason { font-family: var(--font-serif); font-style: italic; color: var(--ink-1); }
+[data-theme="omnigraph"] .impl-feed-runpath { color: var(--ink-3); }
+[data-theme="omnigraph"] .impl-feed-runpath code {
+  background: var(--bg-0); border: 1px solid var(--line-0); color: var(--ink-1);
+}
+[data-theme="omnigraph"] .impl-feed-files { font-family: var(--font-mono); color: var(--ink-1); }
+[data-theme="omnigraph"] .impl-feed-files li { border-bottom: 1px dashed var(--line-0); }
+[data-theme="omnigraph"] .impl-feed-files li code { color: var(--ink-1); background: transparent; }
+[data-theme="omnigraph"] .impl-feed-pre {
+  background: var(--bg-0); border: 1px solid var(--line-0);
+  color: var(--ink-1); border-radius: 6px;
+}
+[data-theme="omnigraph"] .impl-feed-section-blocked .impl-feed-pre {
+  border-color: var(--rose-bd);
+  background: linear-gradient(180deg, var(--rose-bg), var(--bg-0) 35%);
+  color: var(--ink-0);
+}
+
+/* ===== Implementer page (omnigraph variant) ===== */
+[data-theme="omnigraph"] .implementer-view {
+  background:
+    radial-gradient(80% 50% at 50% 0%, rgba(232,144,96,0.05), transparent 60%),
+    var(--bg-0);
+}
+[data-theme="omnigraph"] .implementer-view-head {
+  border-bottom: 1px solid var(--line-0);
+  background: linear-gradient(180deg, var(--bg-1) 0%, transparent 100%);
+}
+[data-theme="omnigraph"] .implementer-view-h    { color: var(--ink-0); }
+[data-theme="omnigraph"] .implementer-view-sub  { color: var(--ink-3); }
+[data-theme="omnigraph"] .implementer-view-meta { color: var(--ink-3); }
+[data-theme="omnigraph"] .implementer-view-proj-v { color: var(--ink-0); }
+[data-theme="omnigraph"] .implementer-view-feed .impl-feed {
+  background:
+    radial-gradient(120% 60% at 50% -20%, rgba(232,144,96,0.06), transparent 60%),
+    var(--bg-0);
+}
+[data-theme="omnigraph"] .implementer-view-feed .impl-feed-header {
+  background: linear-gradient(180deg, var(--bg-1) 0%, transparent 100%);
+}

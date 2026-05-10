@@ -1,0 +1,23 @@
+{
+  "name": "atelier-backend",
+  "version": "0.1.0-phase-a",
+  "description": "Atelier backend — Bun + TypeScript. Hosts WebSocket hub, PTY bridge to Claude CLI, MCP server, SQLite persistence, cron scheduler.",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "validate": "bun src/boot/validate.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "bun-types": "latest",
+    "node-pty": "^1.1.0",
+    "resend": "^6.12.2",
+    "yaml": "^2.4.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
