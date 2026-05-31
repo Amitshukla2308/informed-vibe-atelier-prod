@@ -14,17 +14,16 @@ type TerminalEngine = "legacy" | "ttyd" | "sidecar";
 function loadTerminalEngine(): TerminalEngine {
   const v = localStorage.getItem("atelier.terminalEngine");
   if (v === "legacy" || v === "ttyd" || v === "sidecar") return v;
-  // Default: the sidecar (Rust PTY engine + iframe-wrapped xterm). Combines
-  // legacy's render fidelity with ttyd's layout isolation. legacy/ttyd stay
-  // available as fallback engines via the chip selector.
-  return "sidecar";
+  // Default: ttyd (browser PTY via reverse-proxy — no Rust sidecar required).
+  // Override to "sidecar" by setting VITE_ATELIERAPP_WS_URL; legacy stays
+  // available via the chip selector for debugging.
+  return "ttyd";
 }
-/** Sidecar engine WS endpoint. Cutover-period default points at the standalone
- *  Rust PTY sidecar's hub. Once the sidecar code is ported in-tree, this falls
- *  back to atelier's own /ws and the env var is removed. */
+/** Sidecar WS endpoint — only active when VITE_ATELIERAPP_WS_URL is explicitly
+ *  set. Without it the sidecar chip is still selectable but not the default,
+ *  preventing a cold clone from pointing at a non-existent :3011 process. */
 const SIDECAR_WS_URL: string | undefined =
-  (import.meta as { env?: { VITE_ATELIERAPP_WS_URL?: string } }).env?.VITE_ATELIERAPP_WS_URL
-  ?? "ws://localhost:3011/ws";
+  (import.meta as { env?: { VITE_ATELIERAPP_WS_URL?: string } }).env?.VITE_ATELIERAPP_WS_URL;
 
 interface BgItem {
   kind: string;

@@ -37,9 +37,31 @@ const checks: Check[] = [
           return null;
         }
         execSync(`${config.claudeBin} --version`, { stdio: "pipe" });
+        // --version exits 0 even when unauthenticated; check credentials file.
+        const creds = `${process.env.HOME}/.claude/.credentials.json`;
+        if (!existsSync(creds)) {
+          return "Claude CLI not authenticated — run: claude login";
+        }
         return null;
       } catch {
-        return `${provider} CLI not responding to --version. Is it authenticated?`;
+        return `${provider} CLI not responding to --version. Is it installed and authenticated?`;
+      }
+    },
+  },
+  {
+    name: "ttyd available",
+    run: () => {
+      const bin = process.env.TTYD_BIN ?? "ttyd";
+      try {
+        execSync(`${bin} --version`, { stdio: "pipe" });
+        return null;
+      } catch {
+        return (
+          "ttyd not found — the default terminal engine requires it.\n" +
+          "  Linux:  sudo apt install ttyd\n" +
+          "  Mac:    brew install ttyd\n" +
+          "  Custom: set TTYD_BIN=/path/to/ttyd"
+        );
       }
     },
   },
