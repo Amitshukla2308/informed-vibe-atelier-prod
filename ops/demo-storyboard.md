@@ -19,17 +19,17 @@
 
 ## Scene 1 — Vague ask (4 s)
 
-**View:** Now (terminal + chat)
+**View:** Now (terminal — ttyd/xterm.js, not a chat form)
 
-**Action:** Type the following ask slowly into the chat input:
+**Action:** Click inside the terminal to focus it, then type the following ask slowly:
 
 ```
 fix the chat input so it clears after send and shows a spinner while the agent is thinking
 ```
 
-**Hit Enter.** The message disappears into the agent. The terminal shows Claude receiving the task.
+**Hit Enter.** The terminal shows Claude receiving the task. The agent (Drafter) begins decomposing.
 
-**Pause 2s** to let the agent start decomposing.
+**Pause 2s** to let the decomposition start before switching views.
 
 ---
 
@@ -48,15 +48,29 @@ fix the chat input so it clears after send and shows a spinner while the agent i
 
 ## Scene 3 — Founder reviews and approves (10 s)
 
-**Action:** Navigate to **Approvals** tab.
+**Two options — pick whichever applies to your recording session:**
 
-The three nodes appear as approval cards. 
+### Option A — Canvas approval (always works, even on first run)
 
-1. Click **Approve** on card 1 (`Clear input after send`) — card turns green / disappears
-2. Click **Approve** on card 2 (`Spinner on agent thinking`) — same
-3. Click **Defer** on card 3 (`Empty-submit guard`) — card greys out
+Stay on **Canvas**. The founder reads the decomposed nodes, then navigates back to **Now** and types an approval instruction into the terminal:
 
-**Pause 1s** after each click. Total ~6s.
+```
+looks good — proceed with nodes 1 and 2; skip the empty-submit guard for now
+```
+
+Hit Enter. The Implementer picks up the approved work.
+
+### Option B — Approvals tab (requires a prior session with agent verifier failures)
+
+Navigate to **Approvals** tab. If a prior run produced verifier constraints, they appear as cards with **accept** / **reject** buttons (not "Approve" / "Defer" — those are not the actual button labels).
+
+1. Click **accept** on constraint 1 — card disappears
+2. Click **accept** on constraint 2 — card disappears
+3. Click **reject** on constraint 3 — card greys out
+
+**Note:** On a first recording with no prior agent sessions, the Approvals list is empty. Use Option A instead.
+
+**Pause 1s** after each action. Total ~6s.
 
 ---
 
