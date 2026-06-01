@@ -4,7 +4,7 @@
 # Sections mirror STEWARDSHIP.md §5 (verify-before-done).
 #
 # Usage:
-#   ./bin/check.sh                   — run all sections (§5 requires docker + credentials)
+#   ./bin/check.sh                   — run all sections (§5 requires docker; no credentials needed)
 #   ./bin/check.sh --skip-smoke      — skip §5 Docker smoke (maintainer-box acceptable)
 #   ./bin/check.sh --rebuild-smoke-image — force rebuild of the cached smoke Docker image
 #
@@ -12,9 +12,10 @@
 # §2  boot validation      validate.ts checks ttyd / CLI / dirs / config (fail-closed)
 # §3  ttyd preflight       ttyd binary responds to --version
 # §4  secret/PII scan      no secrets or personal data in tracked files
-# §5  PTY smoke            Docker clean-container: apt-ttyd + fresh Bun, claude runs in
-#                          a PTY → raw.log > 0. Kills the maintainer-box false-positive
-#                          where linuxbrew ttyd + host PATH masked the cold-clone state.
+# §5  PTY smoke            Docker clean-container (NO creds): static-ttyd + fresh Bun,
+#                          claude --version in PTY → raw.log > 0; validate.ts exits
+#                          non-zero with "claude login" guidance. True unauthenticated
+#                          cold-clone proof — no host credentials injected.
 
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -113,16 +114,12 @@ echo "§5 PTY smoke"
 if [[ "$SKIP_SMOKE" -eq 1 ]]; then
   echo "  (skipped via --skip-smoke)"
 else
-  # ── Pre-flight: docker + credentials ────────────────────────────────────────
+  # ── Pre-flight: docker only (no credentials needed — §5 tests the unauth path) ──
   if ! command -v docker &>/dev/null; then
     fail "§5 requires docker (install docker, or pass --skip-smoke to skip)"
   fi
-  CREDS_FILE="${CLAUDE_CREDENTIALS_FILE:-$HOME/.claude/.credentials.json}"
-  if [[ ! -f "$CREDS_FILE" ]]; then
-    fail "§5 requires claude credentials at $CREDS_FILE (set CLAUDE_CREDENTIALS_FILE, or pass --skip-smoke)"
-  fi
 
-  SMOKE_IMAGE="atelier-check-smoke:v4"
+  SMOKE_IMAGE="atelier-check-smoke:v5"
   TMP_CTX=$(mktemp -d)
   trap 'rm -rf "$TMP_CTX"' EXIT
 
@@ -138,11 +135,11 @@ FROM debian:bookworm-slim
 # curl + ca-certificates + unzip: Bun installer.
 # nodejs/npm: Claude CLI global install.
 # bsdutils: provides 'script' for PTY smoke.
-# build-essential python3: node-pty native rebuild (node-gyp needs make + g++).
 # ttyd is NOT in Debian bookworm-slim apt repos; install the upstream static binary.
+# Note: build-essential + python3 (node-gyp) were only needed for node-pty, which is
+# no longer a dependency — the terminal is ttyd-direct via node:child_process.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates unzip nodejs npm bsdutils \
-    build-essential python3 \
     && rm -rf /var/lib/apt/lists/*
 # Install ttyd 1.7.7 static binary (works on any glibc x86_64 Linux, no apt needed)
 RUN curl -fsSL https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \
@@ -214,19 +211,21 @@ export CLAUDE_BIN
 # In a clean/unauthenticated container there are no credentials, so validate.ts MUST
 # exit non-zero with an actionable "run: claude login" message.
 # A silent exit (no message) would be the regression; a loud fail-with-guidance is correct.
-echo "  smoke/validate (unauthenticated — expect loud fail-with-guidance)"
+echo "  smoke/validate (unauthenticated — expect loud fail-with-guidance, NO creds mounted)"
 cd /work/backend
 VALIDATE_OUT=$(bun run src/boot/validate.ts 2>&1 || true)
 echo "$VALIDATE_OUT"
 if echo "$VALIDATE_OUT" | grep -q "claude login"; then
   echo "    validate.ts: loud fail-with-guidance confirmed (contains 'claude login')"
 elif echo "$VALIDATE_OUT" | grep -q "All boot checks passed"; then
-  # Credentials were injected — treat as pass (shouldn't happen in unauth container
-  # but defensively OK if the credentials mount is active).
-  echo "    validate.ts: passed (credentials present in container)"
+  # No credentials were mounted — if validate.ts reports "all passed" something is
+  # wrong (credential auto-discovery bypassed the check). Treat as a regression.
+  echo "✗ validate.ts reported all-passed in an unauthenticated container — credentials leaked in?" >&2
+  exit 12
 else
   echo "✗ validate.ts exited without actionable guidance — silent failure is the regression" >&2
   echo "  Output was: $VALIDATE_OUT" >&2
+  echo "  Expected: output containing 'claude login' (run: claude login)" >&2
   exit 11
 fi
 
@@ -258,11 +257,10 @@ SMOKE_INNER
   echo "  running Docker clean-container smoke..."
   if docker run --rm \
       -v "$REPO:/atelier:ro" \
-      -v "$CREDS_FILE:/root/.claude/.credentials.json:ro" \
       -v "$TMP_CTX/smoke-inner.sh:/smoke-inner.sh:ro" \
       "$SMOKE_IMAGE" \
       bash /smoke-inner.sh; then
-    pass "Docker clean-container PTY smoke: static-ttyd at /usr/local/bin/ttyd + raw.log > 0 bytes + validate.ts loud-fail-with-guidance confirmed"
+    pass "Docker clean-container PTY smoke (NO creds mounted): static-ttyd at /usr/local/bin/ttyd + raw.log > 0 bytes + validate.ts loud-fail-with-guidance confirmed"
   else
     fail "Docker clean-container PTY smoke failed (see output above)"
   fi
