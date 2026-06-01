@@ -58,8 +58,11 @@ const checks: Check[] = [
       } catch {
         return (
           "ttyd not found — the default terminal engine requires it.\n" +
-          "  Linux:  sudo apt install ttyd\n" +
+          "  Universal (Linux static binary):\n" +
+          "    curl -fsSL https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \\\n" +
+          "      -o /usr/local/bin/ttyd && chmod +x /usr/local/bin/ttyd\n" +
           "  Mac:    brew install ttyd\n" +
+          "  Ubuntu (universe repo only — NOT Debian): sudo apt install ttyd\n" +
           "  Custom: set TTYD_BIN=/path/to/ttyd"
         );
       }

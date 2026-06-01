@@ -79,7 +79,7 @@ That's the only metric that matters before a project leaves the workshop.
 
 Single Linux box, WSL, or Mac. Native installers for desktop are on the v0.2/v0.3 roadmap.
 
-**Prerequisites:** Bun ≥1.1 · Node ≥20 · [ttyd](https://github.com/tsl0922/ttyd) (`sudo apt install ttyd` / `brew install ttyd`) · one authenticated provider CLI (`claude login`, `gemini auth login`, etc.). Full install notes: [INSTALL.md](./INSTALL.md).
+**Prerequisites:** Bun ≥1.1 · Node ≥20 · [ttyd](https://github.com/tsl0922/ttyd) (Linux: static binary — `curl -fsSL https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 -o /usr/local/bin/ttyd && chmod +x /usr/local/bin/ttyd`; Mac: `brew install ttyd`) · one authenticated provider CLI (`claude login`, `gemini auth login`, etc.). Full install notes: [INSTALL.md](./INSTALL.md).
 
 ```bash
 # 1. Clone

@@ -22,9 +22,11 @@ curl -fsSL https://bun.sh/install | bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install 20
 
-# ttyd
-sudo apt install ttyd      # Debian/Ubuntu
-# or build from source: https://github.com/tsl0922/ttyd
+# ttyd — static binary (works on any x86_64 Linux; ttyd is NOT in Debian apt repos)
+curl -fsSL https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \
+  -o /usr/local/bin/ttyd && chmod +x /usr/local/bin/ttyd
+# Ubuntu (universe repo only — does NOT work on Debian): sudo apt install ttyd
+# Build from source: https://github.com/tsl0922/ttyd
 
 # CLI agent (Claude shown; substitute your preferred provider)
 npm install -g @anthropic-ai/claude-code
