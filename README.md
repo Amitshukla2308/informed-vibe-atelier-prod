@@ -2,7 +2,7 @@
 
 # Informed Vibe Atelier
 
-**An AI working environment, for the founder/builders who wants to actually ship.**
+**An AI working environment, for the founder/builders who want to actually ship.**
 
 *Vibe code with a brain. Ship with discipline. Bring your own provider.*
 
@@ -106,7 +106,7 @@ Multi-user installs (invite a co-founder over the internet) are documented separ
 
 OmniGraph is the *knowing layer*. It ingests your past conversations across every AI tool you use (Claude Code, Gemini CLI, Cursor, Cline, Antigravity, ChatGPT exports), distills them into a personal brain, and Informed Vibe Atelier injects it on every session boot. The agent reads *who is this founder* before *what's happening right now*.
 
-OmniGraph ships as a separate OSS project (link forthcoming) because it's useful even on its own — you can point Cursor or Continue.dev at the same brain artifacts.
+OmniGraph ships as a separate OSS project ([informed-vibe-omnigraph on PyPI](https://pypi.org/project/informed-vibe-omnigraph/)) because it's useful even on its own — you can point Cursor or Continue.dev at the same brain artifacts.
 
 Conceptually:
 
@@ -245,8 +245,8 @@ We've quoted what we're confident Karpathy said publicly, with dates and links. 
 
 ## Roadmap
 
-- **v0.0.4** *(current)* — Multi-tenant auth, 4 providers (Claude / Gemini / Qwen-Code / OpenCode), ttyd terminal, **vendored OmniGraph brain pipeline** (`bin/informed-vibe brain {init,compile,status,daemon}`). Linux verified; Mac native + Windows-via-WSL.
-- **v0.0.5** — Publish standalone OmniGraph as a separate package (`@informedvibe/omnigraph` or PyPI equivalent). The vendored copy stays as the install-friendly default; the standalone enables interop with Cursor / Continue / Cline / other readers, restoring the substrate-vs-UX boundary captured in the original distribution plan.
+- **v0.0.4** — Multi-tenant auth, 4 providers (Claude / Gemini / Qwen-Code / OpenCode), ttyd terminal, **vendored OmniGraph brain pipeline** (`bin/informed-vibe brain {init,compile,status,daemon}`). Linux verified; Mac native + Windows-via-WSL.
+- **v0.0.5** *(current)* — Standalone OmniGraph published to PyPI as [`informed-vibe-omnigraph`](https://pypi.org/project/informed-vibe-omnigraph/). Vendored copy stays as the install-friendly default; the standalone enables interop with Cursor / Continue / Cline / other readers. Cold-clone hardened: static ttyd binary, fail-closed preflight, and unauthenticated Docker smoke test (`raw.log > 0`).
 - **v0.1** — Rust PTY sidecar (replaces ttyd; native cross-platform PTY).
 - **v0.2** — Native Tauri desktop bundles.
 - **v0.x** — Per-user PTY bridge: your CLI binary on your laptop, the host orchestrates. Zero-trust multi-founder.
