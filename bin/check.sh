@@ -4,9 +4,11 @@
 # Sections mirror STEWARDSHIP.md §5 (verify-before-done).
 #
 # Usage:
-#   ./bin/check.sh                   — run all sections (§5 requires docker; no credentials needed)
-#   ./bin/check.sh --skip-smoke      — skip §5 Docker smoke (maintainer-box acceptable)
-#   ./bin/check.sh --rebuild-smoke-image — force rebuild of the cached smoke Docker image
+#   ./bin/check.sh                        — run all sections (§5/§6 require docker; no credentials needed)
+#   ./bin/check.sh --skip-smoke           — skip §5 Debian Docker smoke
+#   ./bin/check.sh --skip-ubuntu          — skip §6 Ubuntu Docker smoke
+#   ./bin/check.sh --rebuild-smoke-image  — force rebuild cached Debian smoke image
+#   ./bin/check.sh --rebuild-ubuntu-image — force rebuild cached Ubuntu smoke image
 #
 # §1  typecheck            tsc --noEmit across backend + frontend
 # §2  boot validation      validate.ts checks ttyd / CLI / dirs / config (fail-closed)
@@ -16,14 +18,21 @@
 #                          claude --version in PTY → raw.log > 0; validate.ts exits
 #                          non-zero with "claude login" guidance. True unauthenticated
 #                          cold-clone proof — no host credentials injected.
+# §6  PTY smoke (Ubuntu)   Same cold-clone proof on ubuntu:24.04 LTS (second OS).
+#                          Confirms static-binary ttyd + Bun + Claude stack is
+#                          distro-agnostic. Pass --skip-ubuntu to skip.
 
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SKIP_SMOKE=0
 REBUILD_SMOKE=0
+SKIP_UBUNTU=0
+REBUILD_UBUNTU=0
 for arg in "$@"; do
-  [[ "$arg" == "--skip-smoke"          ]] && SKIP_SMOKE=1
-  [[ "$arg" == "--rebuild-smoke-image" ]] && REBUILD_SMOKE=1
+  [[ "$arg" == "--skip-smoke"           ]] && SKIP_SMOKE=1
+  [[ "$arg" == "--rebuild-smoke-image"  ]] && REBUILD_SMOKE=1
+  [[ "$arg" == "--skip-ubuntu"          ]] && SKIP_UBUNTU=1
+  [[ "$arg" == "--rebuild-ubuntu-image" ]] && REBUILD_UBUNTU=1
 done
 
 pass() { echo "  ✓ $1"; }
@@ -263,6 +272,146 @@ SMOKE_INNER
     pass "Docker clean-container PTY smoke (NO creds mounted): static-ttyd at /usr/local/bin/ttyd + raw.log > 0 bytes + validate.ts loud-fail-with-guidance confirmed"
   else
     fail "Docker clean-container PTY smoke failed (see output above)"
+  fi
+fi
+
+
+# ── §6 PTY smoke — Ubuntu 24.04 LTS (second OS) ──────────────────────────────
+# Same cold-clone proof as §5 on ubuntu:24.04 — confirms the static-binary ttyd
+# + Bun + Claude stack is distro-agnostic (not Debian-specific).
+# Ubuntu 24.04 ships Node 18 LTS from apt, which satisfies claude-code's Node ≥18 req.
+echo "§6 PTY smoke (Ubuntu 24.04)"
+if [[ "$SKIP_UBUNTU" -eq 1 ]]; then
+  echo "  (skipped via --skip-ubuntu)"
+else
+  if ! command -v docker &>/dev/null; then
+    fail "§6 requires docker (install docker, or pass --skip-ubuntu to skip)"
+  fi
+
+  UBUNTU_IMAGE="atelier-check-smoke-ubuntu:v1"
+  TMP_CTX_U=$(mktemp -d)
+  # Update EXIT trap to cover both temp dirs (TMP_CTX may or may not be set)
+  trap 'rm -rf "${TMP_CTX:-}" "${TMP_CTX_U}"' EXIT
+
+  if [[ "$REBUILD_UBUNTU" -eq 1 ]] || ! docker image inspect "$UBUNTU_IMAGE" &>/dev/null; then
+    echo "  building clean smoke image (ubuntu:24.04 + static-binary ttyd + bun + claude)..."
+    echo "  (first build ~3–5 min due to npm downloads; subsequent runs use the cache)"
+    cp "$REPO/backend/package.json" "$TMP_CTX_U/package.json"
+    cp "$REPO/backend/bun.lock"     "$TMP_CTX_U/bun.lock"
+    cat > "$TMP_CTX_U/Dockerfile" << 'DOCKERFILE'
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+# Ubuntu 24.04 ships Node 18 LTS from apt (satisfies claude-code Node ≥18 req).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates unzip nodejs npm bsdutils \
+    && rm -rf /var/lib/apt/lists/*
+# Install ttyd 1.7.7 static binary (works on any glibc x86_64 Linux, no apt needed)
+RUN curl -fsSL https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \
+      -o /usr/local/bin/ttyd \
+    && chmod +x /usr/local/bin/ttyd \
+    && ttyd --version
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
+RUN npm install -g @anthropic-ai/claude-code
+WORKDIR /pkg
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+DOCKERFILE
+    docker build -q -t "$UBUNTU_IMAGE" "$TMP_CTX_U" \
+      || fail "docker build failed for Ubuntu image — check docker daemon and network, then retry"
+    echo "  Ubuntu image built and cached as $UBUNTU_IMAGE"
+  else
+    echo "  using cached Ubuntu smoke image ($UBUNTU_IMAGE)"
+  fi
+
+  # Inner smoke script — identical assertions to §5 (static binary + PTY + validate.ts)
+  cat > "$TMP_CTX_U/smoke-inner.sh" << 'SMOKE_INNER'
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ① Confirm static ttyd is at /usr/local/bin/ttyd
+echo "  smoke/ttyd"
+TTYD_PATH=$(which ttyd 2>/dev/null || echo "")
+if [[ -z "$TTYD_PATH" ]]; then
+  echo "✗ ttyd not found in container PATH" >&2; exit 10
+fi
+if [[ "$TTYD_PATH" == *"linuxbrew"* || "$TTYD_PATH" == *".homebrew"* ]]; then
+  echo "✗ ttyd resolved to linuxbrew path: $TTYD_PATH" >&2; exit 10
+fi
+if [[ "$TTYD_PATH" != "/usr/local/bin/ttyd" ]]; then
+  echo "✗ expected static ttyd at /usr/local/bin/ttyd, got: $TTYD_PATH" >&2; exit 10
+fi
+TTYD_VER=$(ttyd --version 2>&1 | head -1)
+echo "    ttyd: $TTYD_VER (path: $TTYD_PATH)"
+
+# ② Copy repo to writable location
+echo "  smoke/setup"
+mkdir -p /work
+tar --exclude='./backend/node_modules' \
+    --exclude='./.git' \
+    --exclude='./node-compile-cache' \
+    --exclude='./data' \
+    -C /atelier -cf - . | tar -xf - -C /work/
+rm -rf /work/backend/node_modules
+ln -sf /pkg/node_modules /work/backend/node_modules
+mkdir -p /work/data/sessions /work/data/tmp
+
+# ③ Locate claude binary
+CLAUDE_BIN=$(which claude 2>/dev/null \
+  || find /usr/local/bin /usr/bin -maxdepth 1 -name claude -perm -u+x 2>/dev/null | head -1 \
+  || echo "")
+if [[ -z "$CLAUDE_BIN" || ! -x "$CLAUDE_BIN" ]]; then
+  echo "✗ claude binary not found in container (PATH=$PATH)" >&2; exit 20
+fi
+export CLAUDE_BIN
+
+# ④ Boot validation — must fail loudly with "claude login" guidance (no creds mounted)
+echo "  smoke/validate (unauthenticated — expect loud fail-with-guidance, NO creds mounted)"
+cd /work/backend
+VALIDATE_OUT=$(bun run src/boot/validate.ts 2>&1 || true)
+echo "$VALIDATE_OUT"
+if echo "$VALIDATE_OUT" | grep -q "claude login"; then
+  echo "    validate.ts: loud fail-with-guidance confirmed (contains 'claude login')"
+elif echo "$VALIDATE_OUT" | grep -q "All boot checks passed"; then
+  echo "✗ validate.ts reported all-passed in an unauthenticated container — credentials leaked in?" >&2
+  exit 12
+else
+  echo "✗ validate.ts exited without actionable guidance — silent failure is the regression" >&2
+  echo "  Output was: $VALIDATE_OUT" >&2
+  echo "  Expected: output containing 'claude login'" >&2
+  exit 11
+fi
+
+# ⑤ PTY smoke — claude in a pty via 'script', assert raw.log > 0
+echo "  smoke/pty"
+RAW_LOG="/tmp/smoke_raw.log"
+rm -f "$RAW_LOG"
+timeout 15 script -q -c "$CLAUDE_BIN --version 2>&1" "$RAW_LOG" || true
+if [[ -s "$RAW_LOG" ]]; then
+  BYTES=$(wc -c < "$RAW_LOG")
+  PREVIEW=$(head -c 120 "$RAW_LOG" | tr -dc '[:print:][:space:]' | head -c 80)
+  echo "    raw.log: ${BYTES} bytes"
+  echo "    preview: $PREVIEW"
+  echo "✓ PTY smoke passed (Ubuntu 24.04)"
+  exit 0
+else
+  echo "✗ PTY smoke: raw.log empty — claude produced no output in Ubuntu 24.04 container pty" >&2
+  echo "  CLAUDE_BIN=$CLAUDE_BIN" >&2
+  echo "  PATH=$PATH" >&2
+  exit 30
+fi
+SMOKE_INNER
+  chmod +x "$TMP_CTX_U/smoke-inner.sh"
+
+  echo "  running Ubuntu Docker clean-container smoke..."
+  if docker run --rm \
+      -v "$REPO:/atelier:ro" \
+      -v "$TMP_CTX_U/smoke-inner.sh:/smoke-inner.sh:ro" \
+      "$UBUNTU_IMAGE" \
+      bash /smoke-inner.sh; then
+    pass "Ubuntu 24.04 clean-container PTY smoke (NO creds mounted): static-ttyd + raw.log > 0 + validate.ts loud-fail-with-guidance confirmed"
+  else
+    fail "Ubuntu clean-container PTY smoke failed (see output above)"
   fi
 fi
 
