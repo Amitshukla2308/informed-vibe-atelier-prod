@@ -51,3 +51,4 @@ omnigraph/data/
 # CLI runtime (pid files + logs)
 .run/
 node-compile-cache/
+bin/.pii-extra

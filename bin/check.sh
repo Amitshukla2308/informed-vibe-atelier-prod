@@ -86,20 +86,24 @@ fi
 
 # ── §4 Secret / PII scan ──────────────────────────────────────────────────────
 echo "§4 secret / PII scan"
+# Generic secret formats — safe to ship publicly, near-zero false positives.
 BAD_PATTERNS=(
   'sk-ant-'
   'ghp_'
-  'AKIA'
+  'AKIA[0-9A-Z]{16}'
   '-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY'
-  '/home/beast'
-  '/mnt/d/'
-  'juspay'
-  'barclays'
-  'amitshukla2308@'
 )
+# Maintainer-specific identifiers (host paths, employer, client, email) live ONLY in
+# a gitignored local file, so they are never published. Absent on a fresh clone — fine.
+if [[ -f "$REPO/bin/.pii-extra" ]]; then
+  while IFS= read -r line; do
+    [[ -n "$line" && "$line" != \#* ]] && BAD_PATTERNS+=("$line")
+  done < "$REPO/bin/.pii-extra"
+fi
 FOUND=0
 for pat in "${BAD_PATTERNS[@]}"; do
-  if git -C "$REPO" grep -rIl -E "$pat" -- ':!*.sh' 2>/dev/null | grep -q .; then
+  # exclude the scanner itself so its own pattern literals don't self-match
+  if git -C "$REPO" grep -rIl -E "$pat" -- ':!bin/check.sh' 2>/dev/null | grep -q .; then
     echo "  ✗ secret/PII pattern found: $pat" >&2
     FOUND=1
   fi
