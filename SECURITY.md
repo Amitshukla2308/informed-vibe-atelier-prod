@@ -4,13 +4,13 @@
 
 Please report security vulnerabilities **privately** before disclosing publicly.
 
-**Preferred:** GitHub Security Advisory — https://github.com/Amitshukla2308/informed-vibe-atelier-prod/security/advisories/new
-
-**Alternative:** email amitshukla2308+security@gmail.com with the subject `[security] <short title>`.
+Open a GitHub Security Advisory: https://github.com/Amitshukla2308/informed-vibe-atelier-prod/security/advisories/new
 
 We aim to acknowledge within 72 hours and provide a remediation timeline within 7 days.
 
-## Scope
+## Scope and risk context
+
+Atelier is a **local-first alpha**. It runs entirely on your machine; there is no cloud backend, no telemetry, and no multi-user PII stored by Atelier itself. The primary attack surface is the local HTTP/WebSocket server (default `:3001` / `:5174`) and the PTY bridge to a provider CLI subprocess.
 
 In scope:
 
@@ -23,7 +23,3 @@ Out of scope (file with the upstream project):
 - Provider CLI subprocess vulnerabilities (Claude / Gemini / Qwen-Code / OpenCode).
 - ttyd vulnerabilities (https://github.com/tsl0922/ttyd).
 - Bun, Node, npm, or Vite vulnerabilities.
-
-## Auth model
-
-Multi-tenant auth is the **γ design** — invite tokens + httpOnly cookies + SQLite-backed sessions. No CF Access, no SMTP. Detailed model: [docs/AUTH_MODEL.md](./docs/AUTH_MODEL.md).
