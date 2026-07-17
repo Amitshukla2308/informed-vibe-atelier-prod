@@ -209,7 +209,7 @@ export function Home({
               </div>
               <div className="dash-stat" data-tone="gold">
                 <span className="dash-stat-icon">{I.bell}</span>
-                <span className="dash-stat-value">{recent.filter(s => !s.reflected).length}</span>
+                <span className="dash-stat-value">{sessions.filter(s => !s.reflected).length}</span>
                 <span className="dash-stat-label">unreflected</span>
               </div>
             </div>
@@ -219,13 +219,17 @@ export function Home({
           <div className="dash-card">
             <div className="dash-active-head">
               <h3 className="dash-h3">{activeProject || "no active project"}</h3>
-              <span className="dash-pill dash-pill-live">
-                <span className="dash-pill-dot" />Live
-              </span>
+              {/* Only assert "Live" for a project that actually exists — the
+                  pill used to render even under the "no active project" header. */}
+              {activeProject && (
+                <span className="dash-pill dash-pill-live">
+                  <span className="dash-pill-dot" />Live
+                </span>
+              )}
             </div>
             <div className="dash-active-meta">
               {orgName ? <><span className="dash-mute">{orgName}</span><span className="dash-dot-sep">·</span></> : null}
-              <span className="dash-mute">canvas · brain · sessions all wired</span>
+              {activeProject && <span className="dash-mute">canvas · brain · sessions all wired</span>}
             </div>
             <div className="dash-active-actions">
               <button className="dash-btn-primary" onClick={onEnterWorkspace}>

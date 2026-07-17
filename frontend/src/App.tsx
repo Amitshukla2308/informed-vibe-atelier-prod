@@ -27,7 +27,12 @@ type AgentState = "idle" | "thinking" | "drafting" | "blocked";
 function wsToAgentState(s: ChatStatus): AgentState {
   if (s === "ready") return "idle";
   if (s === "closed" || s === "error") return "blocked";
-  return "thinking";
+  // Only an actually-open socket means the agent is working. The default
+  // "connecting" status (set before any session starts) previously fell
+  // through to "thinking", so the Home ribbon showed a pulsing "· thinking"
+  // lamp with zero sessions running — a first-run trust-killer.
+  if (s === "open") return "thinking";
+  return "idle";
 }
 
 const Ico = {
@@ -45,7 +50,10 @@ const Ico = {
 
 type AppState =
   | { kind: "loading" }
-  | { kind: "onboarding" }
+  // isAuthed distinguishes a signed-in founder whose config is incomplete
+  // (must be sent to onboarding to finish) from an anonymous stranger (who
+  // should see marketing, not a setup form).
+  | { kind: "onboarding"; isAuthed: boolean }
   | { kind: "welcome-back"; previous: PreviousIdentity }
   | { kind: "ready"; agentName: string; founderName: string; activeProject: string; orgName: string | null; pickupFlavor: string | null }
   | { kind: "error"; message: string };
@@ -126,7 +134,13 @@ function decideScreen(args: {
   //       a duplicate identity by accident.
   //    c) anything else → Landing.
   if (route === "/" || route === "") {
-    if (adminSignin && appState.kind !== "ready") return { kind: "onboarding" };
+    // Show onboarding when explicitly requested (?signin=admin, any non-ready
+    // state — preserves the host-setup escape) OR when the visitor is a
+    // signed-in founder who simply hasn't finished setup. The latter must
+    // never be bounced to marketing (they'd loop on sign-in).
+    if ((adminSignin || (appState.kind === "onboarding" && appState.isAuthed)) && appState.kind !== "ready") {
+      return { kind: "onboarding" };
+    }
     if (appState.kind === "welcome-back") {
       return { kind: "welcome-back", previous: appState.previous };
     }
@@ -148,10 +162,12 @@ function decideScreen(args: {
     return { kind: "welcome-back", previous: appState.previous };
   }
 
-  // 5. Onboarding state needs ?signin=admin to show Onboarding;
-  //    otherwise an unconfigured visitor sees Landing.
+  // 5. Onboarding state: a signed-in founder with an incomplete config is sent
+  //    to Onboarding to finish (this is the path a returning user lands on
+  //    after sign-in → /home). ?signin=admin also forces it. An UNauthenticated
+  //    visitor with no config still sees Landing (marketing, not a form).
   if (appState.kind === "onboarding") {
-    if (adminSignin) return { kind: "onboarding" };
+    if (adminSignin || appState.isAuthed) return { kind: "onboarding" };
     return { kind: "landing", isAuthed: false };
   }
 
@@ -357,8 +373,9 @@ export default function App() {
       getMe().catch(() => ({ user: null, memberships: [] as { org_id: string; org_name: string; role: string }[] })),
       getOnboardingState().catch(() => null),
     ]).then(([me, s]) => {
+      const isAuthed = !!me?.user;
       if (!s) {
-        setAppState({ kind: "onboarding" });
+        setAppState({ kind: "onboarding", isAuthed });
         return;
       }
       if (s.configured && s.agent_name && s.active_project) {
@@ -379,11 +396,11 @@ export default function App() {
       } else if (s.previous_identity) {
         setAppState({ kind: "welcome-back", previous: s.previous_identity });
       } else {
-        setAppState({ kind: "onboarding" });
+        setAppState({ kind: "onboarding", isAuthed });
       }
     }).catch(() => {
       // Backend unreachable — drop to Landing instead of a stuck error screen.
-      setAppState({ kind: "onboarding" });
+      setAppState({ kind: "onboarding", isAuthed: false });
     });
   }, []);
 
@@ -571,7 +588,10 @@ export default function App() {
           <span>{agentName} · {agentState}</span>
         </div>
         <div className="ribbon-divider ribbon-crumb-meta" />
-        <div className="ribbon-crumb-meta">session · live</div>
+        {/* Derive from agentState instead of a hardcoded "live" — the old
+            literal always claimed a session was live even on Home with zero
+            sessions. */}
+        <div className="ribbon-crumb-meta">session · {agentState === "thinking" ? "live" : agentState === "blocked" ? "ended" : "idle"}</div>
         <div className="ribbon-right">
           {bgTasks.length > 0 && (
             <div className="ribbon-bgtasks" title="background tasks">
