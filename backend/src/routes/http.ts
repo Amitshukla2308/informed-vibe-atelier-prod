@@ -15,7 +15,7 @@
  *   POST /ingest/usage
  */
 
-import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
 import { resolve, extname, basename } from "node:path";
 import YAML from "yaml";
 import { config } from "~/config";
@@ -267,6 +267,13 @@ export async function handleHttp(req: Request): Promise<Response> {
       current.active_project = body.project_name;
       if (body.provider) current.provider = body.provider;
       current.logged_out = false;  // completing onboarding clears any stale logout flag
+      // Reflection default: write it explicitly at onboarding so the background
+      // worker and the Settings UI agree from day one. Without a value the
+      // worker fell back to "manual" (memory only accrued if the founder hit
+      // end-session every time) while the UI advertised reflect as auto —
+      // QA 2026-07-17 finding 15. "semi-auto" reflects substantive sessions
+      // (>= token threshold) and skips trivial ones, bounding token spend.
+      if (current.reflection_mode === undefined) current.reflection_mode = "semi-auto";
       writeFileSync(configPath, YAML.stringify(current));
       let created = false;
       if (!projectMeta(body.project_name)) {
@@ -1760,7 +1767,24 @@ export async function handleHttp(req: Request): Promise<Response> {
     if (!ctx) return json({ error: "auth required" }, 401);
     const sid = path.slice("/terminal-v2/stop/".length);
     if (!sid) return json({ error: "missing sessionId" }, 400);
-    return json(stopTerminalV2(sid));
+    const stopResult = stopTerminalV2(sid);
+    // False-done detector (QA 2026-07-17 / ADR-001 step 6): a session that ran
+    // but left no transcript is the "looks done, actually empty" failure the
+    // v2 engine reintroduced. Check the provider JSONL + raw.log; report
+    // captured so the UI can flag it instead of silently showing nothing.
+    let captured = true;
+    try {
+      const project = config.agent.active_project ?? "default";
+      const projectCwd = resolve(config.projectsDir, project);
+      const conv = await readSessionConversation(sid, projectCwd, "claude");
+      const rawPath = resolve(config.dataDir, "sessions", sid, "raw.log");
+      const rawBytes = existsSync(rawPath) ? statSync(rawPath).size : 0;
+      captured = !!(conv && conv.userTurnCount > 0) || rawBytes > 0;
+      if (!captured) {
+        console.warn(`[terminal-v2] session ${sid.slice(0, 8)} closed with NO capture (no provider JSONL, empty raw.log) — reflection will have nothing to read.`);
+      }
+    } catch { /* capture check is best-effort — never block stop */ }
+    return json({ ...stopResult, captured });
   }
 
   if (path.startsWith("/terminal-v2/status/") && req.method === "GET") {

@@ -500,6 +500,8 @@ export interface SessionEntry {
   flavor?: string;
   approxTokens?: number;
   firstUserLine?: string;
+  /** False-done detector: false = session ran but left no transcript. */
+  captured?: boolean;
 }
 
 export async function listSessions(project: string): Promise<SessionEntry[]> {

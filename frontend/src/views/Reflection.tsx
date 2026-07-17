@@ -226,6 +226,9 @@ export function Reflection({ project, onNavigateToNow }: Props) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--t-1)", color: "var(--a-mute)" }}>
                       session {shortId(s.sessionId)} · {timeAgo(s.endedAt)} · {s.turnCount} turns · ~{Math.round((s.approxTokens ?? 0) / 1000)}k tokens
+                      {s.captured === false && (
+                        <span title="This session left no transcript — nothing for reflection to read. Check the terminal engine / provider session store." style={{ marginLeft: 8, padding: "1px 6px", borderRadius: 4, background: "var(--a-danger, #b3261e)", color: "#fff", fontSize: "0.62rem", letterSpacing: "0.06em", textTransform: "uppercase" }}>no capture</span>
+                      )}
                     </div>
                     <div style={{ fontSize: "var(--t-2)", color: "var(--a-ink)", marginTop: 3, fontFamily: "var(--font-serif)", lineHeight: 1.35, wordBreak: "break-word" }}>
                       {s.firstUserLine ? `"${s.firstUserLine}"` : <span style={{ color: "var(--a-mute)", fontStyle: "italic", fontFamily: "var(--font-mono)" }}>no user message captured</span>}

@@ -28,14 +28,20 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let running = false;
 
 function readMode(): { mode: ReflectionMode; threshold: number } {
+  // Fallback is "semi-auto" (not "manual"): the Settings UI presents reflect as
+  // automatic, and onboarding now writes the key explicitly. An absent key
+  // means a pre-2026-07-17 install or the shipped template — coherent default
+  // is to reflect substantive sessions, not to silently do nothing (QA finding
+  // 15). semi-auto only reflects sessions past the token threshold, so trivial
+  // ones are skipped and token spend stays bounded.
   try {
     const cfg = loadAgentConfig() as unknown as { reflection_mode?: ReflectionMode; reflection_token_threshold?: number };
     return {
-      mode: cfg.reflection_mode ?? "manual",
+      mode: cfg.reflection_mode ?? "semi-auto",
       threshold: cfg.reflection_token_threshold ?? 8000,
     };
   } catch {
-    return { mode: "manual", threshold: 8000 };
+    return { mode: "semi-auto", threshold: 8000 };
   }
 }
 
