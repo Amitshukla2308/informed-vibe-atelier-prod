@@ -35,6 +35,8 @@ backend/src/
 ├── mcp/                  MCP server: canvas / brain / session tools
 ├── agent/                CLI subprocess management + provider adapters
 │   ├── providers/        one CliAdapter per provider
+│   ├── terminal-server.ts  ttyd bridge — spawns ttyd; PTY child is ttyd's, not Bun's
+│   ├── terminal-proxy.ts   WebSocket relay between frontend and ttyd
 │   └── ...
 ├── session/              session lifecycle, reflect worker, brain loader
 ├── auth/                 invite tokens, cookies, middleware
@@ -73,6 +75,17 @@ Provider abstraction is `backend/src/agent/providers/<provider>.ts`. Each adapte
 
 Add a new provider: write a new adapter, register it in `providers/index.ts`, add it to the onboarding picker.
 
+## Agent topology
+
+The load-bearing loop uses **two roles**:
+
+| Role | File | Function |
+|---|---|---|
+| **Drafter** | `agent/drafter-background.ts` | Decomposes a vague ask into approvable Canvas nodes (intent + acceptance criteria). Nothing executes until the founder greenlights a node. |
+| **Implementer** | (provider CLI subprocess) | Executes one approved node via a single provider (claude / gemini / qwen-code / opencode). |
+
+`agent/fixer.ts` and `agent/researcher.ts` exist as auxiliary helpers but are not in the primary demo path. Allocator and Senior Reviewer are deferred to a future milestone.
+
 ## Auth (γ)
 
 - Invite tokens are 32-byte random values, single-use, 7-day TTL, stored in SQLite.
@@ -85,3 +98,11 @@ Detailed: [AUTH_MODEL.md](./AUTH_MODEL.md).
 ## Brain reader
 
 `backend/src/session/load-omnigraph-brain.ts` reads `~/.informedvibe/og_artifacts/` at session boot, caches per-session, and inlines content into the system prompt. Missing files degrade gracefully. See [BRAIN_INTEGRATION.md](./BRAIN_INTEGRATION.md).
+
+## Removed components
+
+These were removed; do not reintroduce them:
+
+- **`pty-bridge.ts` / `pty-helper.cjs`** — dropped when ttyd became the default terminal backend. The live bridge is `agent/terminal-server.ts`. A future v0.1 Rust sidecar will eventually replace ttyd.
+- **`node-pty`** — removed from `backend/package.json`. Bun+node-pty triggers SIGHUP on PTY children at ~12 ms; unfixable under Bun. The ttyd path avoids this: ttyd calls `forkpty()` itself, making the CLI process its child rather than Bun's.
+- **`:3011` sidecar as default** — `Now.tsx` formerly defaulted `terminalEngine` to `"sidecar"` pointing at `ws://localhost:3011/ws`. No sidecar ships in this repo. The default is now `"ttyd"`; the `VITE_ATELIERAPP_WS_URL` env-var toggle is reserved for future use.

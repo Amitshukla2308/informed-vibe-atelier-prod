@@ -32,7 +32,7 @@ import { resolve } from "node:path";
 import { loadAgentConfig, config } from "~/config";
 import { composePrompt } from "~/agent/identity";
 import { extractAndWriteSignals } from "~/session/extract-signals";
-import { getCliAdapter } from "~/agent/providers";
+import { getCliAdapter, readSessionConversation, claudeJsonlPathFor as providerClaudeJsonlPathFor } from "~/agent/providers";
 import { loadOmnigraphBrain } from "~/session/load-omnigraph-brain";
 
 /**
@@ -63,14 +63,14 @@ function findOmnigraphRunner(): { bin: string; argsPrefix: string[] } | null {
 
 /**
  * Derive Claude Code's per-session JSONL path from project + sid.
- * Convention: ~/.claude/projects/<slugified-project-cwd>/<sid>.jsonl
- * where slugified = the absolute project path with `/` → `-` and no
- * leading slash. (Same convention OmniGraph adapters use.)
+ * Delegates to the claude provider's resolver — the single owner of the CLI's
+ * slug rule (every non-alphanumeric → `-`) plus legacy + scan fallbacks. This
+ * replaces a duplicated (and wrong: dots were kept) derivation that returned
+ * null on any dotted install path, silently starving reflection of its input.
  */
 function claudeJsonlPathFor(projectName: string, sessionId: string): string | null {
   const cwd = resolve(config.projectsDir, projectName);
-  const slug = cwd.replace(/^\/+/, "").replace(/\//g, "-");
-  const p = resolve(process.env.HOME ?? "/root", ".claude/projects", `-${slug}`, `${sessionId}.jsonl`);
+  const p = providerClaudeJsonlPathFor(sessionId, cwd);
   return existsSync(p) ? p : null;
 }
 
@@ -223,9 +223,34 @@ function approxDurationFromRawLog(rawLogPath: string): string {
   }
 }
 
+/**
+ * Render a normalized conversation as a compact transcript for the reflection
+ * prompt. Text blocks only (tool noise dropped); size-capped head+tail so a
+ * long session can't blow the prompt budget.
+ */
+function renderTranscriptForReflection(conv: { turns: Array<{ role: string; blocks: Array<{ type: string }> }> }): string {
+  const CAP = 48_000;
+  const lines: string[] = [];
+  for (const turn of conv.turns) {
+    const text = turn.blocks
+      .filter(b => b.type === "text")
+      .map(b => (b as { type: string; text: string }).text)
+      .join("\n")
+      .trim();
+    if (!text) continue;
+    lines.push(`**${turn.role === "user" ? "founder" : "agent"}:** ${text}`);
+  }
+  const full = lines.join("\n\n");
+  if (full.length <= CAP) return full;
+  const half = CAP / 2;
+  return `${full.slice(0, half)}\n\n[… transcript elided for length …]\n\n${full.slice(-half)}`;
+}
+
 // Build the full appendable prompt: identity composition + reflection directive
-// (with template placeholders filled for this specific session).
-function buildReflectionPrompt(sessionId: string, rawLogPath: string): {
+// (with template placeholders filled for this specific session). When a
+// normalized transcript is supplied it is embedded verbatim — a --print spawn
+// has no other access to the conversation it is asked to reflect on.
+function buildReflectionPrompt(sessionId: string, rawLogPath: string, transcriptMarkdown?: string): {
   composedPath: string;
   userMessage: string;
   projectName: string;
@@ -283,7 +308,13 @@ function buildReflectionPrompt(sessionId: string, rawLogPath: string): {
     .replaceAll("{{DURATION}}", duration)
     .replaceAll("{{RAW_LOG_SIZE}}", rawSize);
 
-  const fullSystemPrompt = identityPrompt + "\n\n" + directive;
+  const fullSystemPrompt =
+    identityPrompt +
+    "\n\n" +
+    directive +
+    (transcriptMarkdown
+      ? `\n\n---\n\n# SESSION TRANSCRIPT (normalized from the provider's session log — THIS is the session you are reflecting on; do not reconstruct it from repo state)\n\n${transcriptMarkdown}`
+      : "");
 
   // Write composed prompt to a tmp file (same pattern as identity.writeComposedPrompt)
   const tmpDir = resolve(config.dataDir, "tmp");
@@ -427,10 +458,26 @@ export async function reflectSession(input: ReflectInput): Promise<ReflectOutput
     // a graceful retry on a different engine.
   }
 
-  // 2b. Fallback path — claude --print + 6-lens directive (existing). Used
-  // when OmniGraph isn't installed, no JSONL exists, or OG reported Qwen
-  // unreachable. Final fallback (static template) lives below this.
-  const { composedPath, userMessage } = buildReflectionPrompt(sessionId, rawLogPath);
+  // 2b. Fallback path — claude --print + 6-lens directive. Used when OmniGraph
+  // isn't installed or reported Qwen unreachable. A --print spawn has NO access
+  // to the session it is asked to reflect on, so the transcript must be loaded
+  // and embedded here. Without one the model confabulates a plausible-looking
+  // reflection from repo state (observed in QA 2026-07-17: a reflection that
+  // confidently described the wrong session) — so with no transcript AND no
+  // raw.log we fail closed instead of writing fabricated memory.
+  const conv = await readSessionConversation(
+    sessionId,
+    resolve(config.projectsDir, projectName),
+    provider,
+  );
+  const transcriptMarkdown = conv ? renderTranscriptForReflection(conv) : null;
+  if (!transcriptMarkdown && !existsSync(rawLogPath)) {
+    throw new Error(
+      `reflect: no transcript for session ${sessionId} — provider JSONL not found and raw.log missing; ` +
+      `refusing to reflect blind. Check the provider session store (slug rule) and terminal capture.`,
+    );
+  }
+  const { composedPath, userMessage } = buildReflectionPrompt(sessionId, rawLogPath, transcriptMarkdown ?? undefined);
   const adapter = getCliAdapter(provider);
   const spawnOpts = {
     sessionId,

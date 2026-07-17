@@ -11,6 +11,12 @@
 </div>
 
 <p align="center">
+  <img src="./docs/demo/demo-loop.gif" alt="Informed Vibe Atelier — vague ask → Canvas decompose → approve → build" width="900"/>
+</p>
+
+> _Synthetic preview — vague ask → Canvas decompose → approve → build. Replace with a live recording once WSLg/display is available._
+
+<p align="center">
   <img src="./docs/demo/atelier-walkthrough.gif" alt="Informed Vibe Atelier — first-run walkthrough: set up your install, pick provider, name your agent, define a project, land in the workspace, open the canvas" width="900"/>
 </p>
 
@@ -41,6 +47,8 @@ The middle ground between over-trusting AI and under-trusting it — *informed, 
 A working environment for small founding teams where an AI co-founder receives direction from both technical and non-technical founders, works autonomously between sessions, and gives each person the right level of visibility and control.
 
 It is **not** another agent framework. **Not** another AI coding assistant. **Not** another startup OS.
+
+**Why not just run `claude` (or Gemini, Cursor, etc.) in a terminal?** Because Atelier makes the AI *ask for approval before building anything*. Every vague ask is decomposed into specific Canvas plan-nodes — intent sentence + acceptance criteria — and **nothing runs until you greenlight a node**. The agent works autonomously between your sessions, but only against scope you explicitly approved. That single gate is what keeps projects from dying in "almost done" purgatory.
 
 It is:
 
@@ -146,11 +154,10 @@ Informed Vibe Atelier is built on the conviction that **visibility beats magic**
 | **Backlog** | Kanban with the agent's work-in-flight + queued. Filter by altitude, surface, priority, founder. |
 | **Implementer** | The execution surface. Watch (and gate) the agent's autonomous build runs against approved Canvas nodes. |
 | **Canvas** | The project shape, six altitudes deep: Project → Plane → Surface → Story → Task → Subtask. The agent (in Drafter mode) proposes nodes; you approve, redirect, or trash. **Every real piece of work is a node with a specific intent sentence.** *"Fix my UI" never enters the approved canvas — it's decomposed first.* |
-| **Brain** | Connectome viz of the three-layer brain. See what the agent thinks it knows about you — and edit it. Demote what's wrong. Promote what's right. The brain is a working surface, not a black box. |
 | **Approvals** | Nothing surprising lands on disk. The agent proposes; you greenlight. Per-section checkboxes for non-trivial changes. |
-| **World** | Watcher digest. Cross-project signals — what changed in your space, what news matters, what to bring into the brain or canvas. |
-| **Reflect** | At session end, the agent does a six-lens crystallization — Engineer · Architect · Strategist · Economist · Scientist · Product — and writes an artifact tomorrow's session reads. Memory across days is a feature, not an afterthought. |
 | **Settings** | Identity, providers, invites, brain diagnostics, agent personalities. Domain Brain (per-project research notes) lives nested here. |
+
+> **Experimental surfaces (off by default — not required for the core loop):** Brain (connectome viz of the agent's three-layer knowledge), Reflect (six-lens session crystallization written to the next session's context), World (cross-project watcher digest). These exist in the codebase and are being developed, but are mid-alpha: Brain currently falls back to a static template each session, World is a grep over a local extracts file, and Reflect scaffolding is empty per domain. They do not affect the Canvas → Approvals → build flow.
 
 ---
 
