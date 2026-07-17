@@ -177,6 +177,24 @@ a real reason (permission, path), report it explicitly with the error string.
 Do not silently abandon.`;
 }
 
+/**
+ * The headless prompt is written for qwen-code (references the `write_file`
+ * tool and a QWEN.md principle in cwd). Claude has neither — it writes via the
+ * `Write` tool and receives the principle through --append-system-prompt-file.
+ * Left unadapted, Claude frequently writes nothing on the first pass and burns
+ * a full retry. This swaps the tool name and the principle reference so a
+ * non-qwen provider gets an accurate, imperative prompt.
+ */
+function adaptPromptForProvider(prompt: string, provider: string): string {
+  if (provider === "qwen-code") return prompt;
+  return prompt
+    .replaceAll("write_file", "Write")
+    .replace(
+      "You are the Implementer. The principles in QWEN.md (cwd) bind you. Read them first.",
+      "You are the Implementer. The Implementer principles provided in your system prompt bind you.",
+    );
+}
+
 function buildHeadlessPrompt(ctx: NodeContext): string {
   // Hardened prompt — designed for non-Coder Qwen reliability. The previous
   // version permitted the model to mark todos "completed" without ever calling
@@ -612,10 +630,18 @@ export async function runImplementerOnce(opts: RunOptions): Promise<ImplementerR
   }
   copyPrincipleAsQwenMd(handle.path);
 
-  // 4. Run qwen-code headless. Retry once with corrective prompt if the
+  // 4. Run the headless coder. Retry once with a corrective prompt if the
   //    hallucination guard would trip (planned artifacts missing on disk).
+  const provider = resolveImplementerProvider(opts.userId);
+  // Claude ignores QWEN.md and has no `write_file` tool, so hand it the
+  // principle via --append-system-prompt-file and adapt the prompt's tool
+  // name / principle reference — otherwise Claude often writes nothing on the
+  // first pass and burns a full retry.
+  const principlePath = provider === "claude" ? writePrincipleForClaude(nodeId) : undefined;
+  console.log(`[implementer] node ${nodeId.slice(0, 8)} → provider=${provider}`);
+
   const plannedArtifactsForPrompt = extractPlannedArtifacts(plan);
-  const prompt = buildHeadlessPrompt(ctx);
+  const prompt = adaptPromptForProvider(buildHeadlessPrompt(ctx), provider);
 
   broadcastImplementerEvent({
     phase: "writing",
@@ -625,11 +651,6 @@ export async function runImplementerOnce(opts: RunOptions): Promise<ImplementerR
     sandbox_path: handle.path,
     planned_artifacts: plannedArtifactsForPrompt.length,
   });
-
-  const provider = resolveImplementerProvider(opts.userId);
-  // Claude ignores QWEN.md, so hand it the principle via --append-system-prompt-file.
-  const principlePath = provider === "claude" ? writePrincipleForClaude(nodeId) : undefined;
-  console.log(`[implementer] node ${nodeId.slice(0, 8)} → provider=${provider}`);
 
   let runResult: QwenCodeRunResult;
   let attempt = 1;
@@ -652,7 +673,7 @@ export async function runImplementerOnce(opts: RunOptions): Promise<ImplementerR
       console.warn(
         `[implementer] retry: ${stillMissing.length}/${plannedArtifactsForPrompt.length} planned artifacts missing after attempt 1`,
       );
-      const retryPrompt = buildRetryPrompt(ctx, stillMissing);
+      const retryPrompt = adaptPromptForProvider(buildRetryPrompt(ctx, stillMissing), provider);
       runResult = await runImplementer(provider, {
         cwd: handle.path,
         prompt: retryPrompt,
