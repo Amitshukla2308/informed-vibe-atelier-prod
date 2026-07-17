@@ -245,7 +245,7 @@ export function SignIn() {
                         "Reset password";
   const lede =
     tab === "signin"
-      ? "Email and password — nothing fancy. Cookie-based sessions, 30 days."
+      ? "Email and password — nothing fancy. Cookie-based sessions."
       : tab === "request"
       ? (isFirstRun
           ? "You're the first user on this install. Create your host account — you'll be auto-approved as admin."

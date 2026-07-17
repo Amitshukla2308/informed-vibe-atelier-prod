@@ -27,7 +27,12 @@ type AgentState = "idle" | "thinking" | "drafting" | "blocked";
 function wsToAgentState(s: ChatStatus): AgentState {
   if (s === "ready") return "idle";
   if (s === "closed" || s === "error") return "blocked";
-  return "thinking";
+  // Only an actually-open socket means the agent is working. The default
+  // "connecting" status (set before any session starts) previously fell
+  // through to "thinking", so the Home ribbon showed a pulsing "· thinking"
+  // lamp with zero sessions running — a first-run trust-killer.
+  if (s === "open") return "thinking";
+  return "idle";
 }
 
 const Ico = {
@@ -583,7 +588,10 @@ export default function App() {
           <span>{agentName} · {agentState}</span>
         </div>
         <div className="ribbon-divider ribbon-crumb-meta" />
-        <div className="ribbon-crumb-meta">session · live</div>
+        {/* Derive from agentState instead of a hardcoded "live" — the old
+            literal always claimed a session was live even on Home with zero
+            sessions. */}
+        <div className="ribbon-crumb-meta">session · {agentState === "thinking" ? "live" : agentState === "blocked" ? "ended" : "idle"}</div>
         <div className="ribbon-right">
           {bgTasks.length > 0 && (
             <div className="ribbon-bgtasks" title="background tasks">
