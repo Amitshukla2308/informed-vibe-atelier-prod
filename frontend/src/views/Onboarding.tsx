@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { completeOnboarding } from "../lib/api";
+import { useEffect, useState } from "react";
+import { completeOnboarding, listProjects, getMe, type ProjectListEntry } from "../lib/api";
 
 type Step = "provider-setup" | "founder-name" | "agent-name" | "org" | "project";
 
@@ -25,15 +25,39 @@ export function Onboarding({ onDone }: Props) {
   const [data, setData] = useState<OnboardingData>({
     founderName: "", agentName: "", orgName: "", projectName: "", projectDescription: "", provider: "claude",
   });
+  // Returning-founder support: a founder who already has projects (config was
+  // reset/blank) shouldn't be forced to invent a NEW project just to get back
+  // in. Fetch what already exists and offer to resume it.
+  const [existingProjects, setExistingProjects] = useState<ProjectListEntry[]>([]);
+  const [showNewProject, setShowNewProject] = useState(false);
+
+  useEffect(() => {
+    // Prefill the founder's name from their account so they don't re-type it.
+    getMe().then(me => {
+      const name = me.user?.display_name;
+      const org = me.memberships?.[0]?.org_name;
+      setData(d => ({
+        ...d,
+        founderName: d.founderName || name || "",
+        orgName: d.orgName || org || "",
+      }));
+    }).catch(() => { /* best-effort prefill */ });
+    // Discover existing projects (empty for a genuine first run).
+    listProjects().then(r => setExistingProjects(r.projects ?? [])).catch(() => { /* fresh install */ });
+  }, []);
 
   const stepIndex = STEPS.indexOf(step);
 
-  async function submit() {
+  // resumeName set → reuse an existing project (no description needed; the
+  // backend reuses a project whose name already exists and does not scaffold).
+  async function submit(resumeName?: string) {
     if (!data.agentName.trim()) {
       setError("Pick a name for your AI co-founder before continuing.");
       setStep("agent-name");
       return;
     }
+    const projectName = resumeName ?? data.projectName;
+    const projectDescription = resumeName ? "" : data.projectDescription;
     setSaving(true);
     setError(null);
     try {
@@ -41,12 +65,12 @@ export function Onboarding({ onDone }: Props) {
         agent_name: data.agentName.trim(),
         founder_name: data.founderName,
         org_name: data.orgName,
-        project_name: data.projectName,
-        project_description: data.projectDescription,
+        project_name: projectName,
+        project_description: projectDescription,
         provider: data.provider,
       });
       localStorage.setItem("atelier.provider", data.provider);
-      onDone(data.agentName, data.founderName, data.projectName);
+      onDone(data.agentName, data.founderName, projectName);
     } catch (e) {
       setError(String(e));
       setSaving(false);
@@ -138,9 +162,48 @@ export function Onboarding({ onDone }: Props) {
           </div>
         )}
 
-        {step === "project" && (
+        {step === "project" && existingProjects.length > 0 && !showNewProject && (
           <div>
-            <h2>First project</h2>
+            <h2>Pick up where you left off</h2>
+            <p>Resume one of your projects, or start a new one.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "12px 0" }}>
+              {existingProjects.map(p => (
+                <button
+                  key={p.name}
+                  type="button"
+                  disabled={saving}
+                  onClick={() => submit(p.name)}
+                  style={{
+                    textAlign: "left", padding: "10px 14px", borderRadius: 4, cursor: "pointer",
+                    background: "transparent", border: "1px solid var(--a-line, #1f2937)",
+                    color: "var(--a-ink, #e6e8eb)", fontFamily: "var(--font-mono)", display: "flex", flexDirection: "column", gap: 3,
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>{p.name}{p.active ? "  ·  active" : ""}</span>
+                  {p.description && (
+                    <span style={{ fontSize: "var(--t-1)", color: "var(--a-mute, #6b7280)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {p.description}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="ghost"
+              disabled={saving}
+              onClick={() => setShowNewProject(true)}
+            >
+              + start a new project
+            </button>
+            {saving && <p style={{ fontFamily: "var(--font-mono)", fontSize: "var(--t-2)", marginTop: 8, color: "var(--a-mute)" }}>Resuming…</p>}
+            {error && <p style={{ color: "var(--sem-red)", fontFamily: "var(--font-mono)", fontSize: "var(--t-2)", marginTop: 8 }}>{error}</p>}
+          </div>
+        )}
+
+        {step === "project" && (existingProjects.length === 0 || showNewProject) && (
+          <div>
+            <h2>{existingProjects.length > 0 ? "New project" : "First project"}</h2>
             <p>What are we building, and what does <em>shipped</em> look like?</p>
             <input
               autoFocus
@@ -156,10 +219,21 @@ export function Onboarding({ onDone }: Props) {
             <button
               className="primary"
               disabled={!data.projectName.trim() || !data.projectDescription.trim() || saving}
-              onClick={submit}
+              onClick={() => submit()}
             >
               {saving ? "Setting up…" : "Enter Atelier"}
             </button>
+            {existingProjects.length > 0 && (
+              <button
+                type="button"
+                className="ghost"
+                disabled={saving}
+                onClick={() => setShowNewProject(false)}
+                style={{ marginTop: 8 }}
+              >
+                ← back to your projects
+              </button>
+            )}
             {error && <p style={{ color: "var(--sem-red)", fontFamily: "var(--font-mono)", fontSize: "var(--t-2)", marginTop: 8 }}>{error}</p>}
           </div>
         )}
