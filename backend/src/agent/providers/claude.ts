@@ -9,17 +9,27 @@
  * and keep only the conversational turns.
  */
 
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { config } from "~/config";
 import type { AgentProvider, ConversationMeta, ContentBlock, NormalizedTurn, CliAdapter, CliSpawnOptions } from "./types";
 
 /**
- * Claude Code path-hashing: cwd `/a/b/c` → dir name `-a-b-c` (every `/` becomes `-`,
- * leading slash yields leading dash). Dots in path stay; no other escaping.
+ * Claude Code path-hashing: cwd `/a/b/c` → dir name `-a-b-c`. The CLI flattens
+ * EVERY character outside [a-zA-Z0-9] to `-` — slashes, dots, underscores, all
+ * of it (verified against ~/.claude/projects: `/home/x/.qa-dir/clone` becomes
+ * `-home-x--qa-dir-clone`). A previous version of this function only replaced
+ * slashes, which made every session invisible (no index entry, no reflection
+ * transcript) whenever the install path contained a dot.
  */
 function cwdToClaudeDirName(cwd: string): string {
+  return cwd.replace(/[^a-zA-Z0-9]/g, "-");
+}
+
+/** The pre-fix derivation (slashes only). Kept solely as a lookup fallback so
+ *  sessions recorded under the old wrong assumption remain findable. */
+function legacyCwdToClaudeDirName(cwd: string): string {
   return cwd.replace(/[/\\]/g, "-");
 }
 
@@ -30,8 +40,26 @@ function claudeProjectsRoot(): string {
   );
 }
 
+/**
+ * Resolve the session JSONL. Layered: current CLI slug rule → legacy slug →
+ * exhaustive scan of the projects root (session ids are UUIDs, so a scan hit
+ * is unambiguous; this also survives future CLI slug-rule changes). Returns
+ * the primary derived path when nothing exists yet, so callers' existsSync
+ * gates keep working unchanged.
+ */
 function jsonlPathFor(sessionId: string, projectCwd: string): string {
-  return resolve(claudeProjectsRoot(), cwdToClaudeDirName(projectCwd), `${sessionId}.jsonl`);
+  const root = claudeProjectsRoot();
+  const primary = resolve(root, cwdToClaudeDirName(projectCwd), `${sessionId}.jsonl`);
+  if (existsSync(primary)) return primary;
+  const legacy = resolve(root, legacyCwdToClaudeDirName(projectCwd), `${sessionId}.jsonl`);
+  if (existsSync(legacy)) return legacy;
+  try {
+    for (const dir of readdirSync(root)) {
+      const candidate = resolve(root, dir, `${sessionId}.jsonl`);
+      if (existsSync(candidate)) return candidate;
+    }
+  } catch { /* root missing — fall through to primary */ }
+  return primary;
 }
 
 /**
