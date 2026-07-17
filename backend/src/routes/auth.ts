@@ -10,6 +10,8 @@ import { existsSync, writeFileSync, unlinkSync, chmodSync, statSync, appendFileS
 import { resolve as pathResolve } from "node:path";
 import { getDb, hashToken, newId, nowIso, randomToken } from "~/db";
 import { getAuthContext, requireAuth, requireAdmin } from "~/auth/middleware";
+import { authMode } from "~/auth/mode";
+import { bootstrapTokenRequired, verifyBootstrapToken, clearBootstrapToken } from "~/auth/bootstrap";
 import { ensureUserHome, userClaudeConfigPath, userClaudeCredentialsPath, isClaudeLinked } from "~/auth/user-home";
 import { sendMagicLink, sendPasswordResetLink, isMailerConfigured } from "~/lib/mailer";
 
@@ -27,7 +29,9 @@ const json = (body: unknown, status = 200, extraHeaders: Record<string, string> 
 function buildCookie(rawToken: string): string {
   // httpOnly, SameSite=Lax (works across tunnel hostname), 30-day max-age.
   const maxAge = ACCESS_TOKEN_MAX_AGE_DAYS * 24 * 60 * 60;
-  const secure = (process.env.ATELIER_AUTH_MODE ?? "dev") !== "dev" ? " Secure;" : "";
+  // Secure only in secure mode: local/dev serve plain HTTP on loopback, where
+  // a Secure cookie would simply be dropped by the browser and break login.
+  const secure = authMode() === "secure" ? " Secure;" : "";
   return `atelier_at=${encodeURIComponent(rawToken)}; Path=/; HttpOnly;${secure} SameSite=Lax; Max-Age=${maxAge}`;
 }
 
@@ -85,6 +89,7 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
       email?: string;
       password?: string;
       display_name?: string;
+      bootstrap_token?: string;
     };
     const email = (body.email ?? "").trim().toLowerCase();
     const password = body.password ?? "";
@@ -144,6 +149,17 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
       return json({ error: "an account with this email already exists" }, 409);
     }
 
+    // Bootstrap-window gate: creating the FIRST admin on an install that is
+    // (or could be) reachable requires the one-time token printed at boot.
+    // Purely local installs skip this entirely (see auth/bootstrap.ts).
+    if (isFirstUser && bootstrapTokenRequired(req) && !verifyBootstrapToken(body.bootstrap_token)) {
+      return json({
+        error: "bootstrap token required",
+        detail: "This install has no users yet and looks reachable from outside. Paste the first-run token printed at backend start (also in data/.bootstrap-token).",
+        bootstrap_token_required: true,
+      }, 403);
+    }
+
     const userId = newId();
     const now = nowIso();
     const hash = await Bun.password.hash(password, "argon2id");
@@ -170,6 +186,8 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
           "user", userId, JSON.stringify({ email, display_name: displayName }), now);
 
     if (isFirstUser) {
+      // Admin exists now — the bootstrap window is closed.
+      clearBootstrapToken();
       // Bootstrap: log them in immediately.
       const rawAccessToken = randomToken("at", 32);
       const accessHash = hashToken(rawAccessToken);

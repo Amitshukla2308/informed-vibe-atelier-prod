@@ -53,7 +53,7 @@ Environment variables you might set:
 
 | Variable | Default | Effect |
 |---|---|---|
-| `ATELIER_AUTH_MODE` | `dev` | Set to anything else (e.g. `prod`) to force `Secure;` flag on cookies. Required for HTTPS deployments. |
+| `ATELIER_AUTH_MODE` | `local` (when unset) | Three modes, fail-closed. `local` (default): strict auth, loopback bind, no impersonation, plain-HTTP cookies. `dev`: enables the `x-atelier-dev-as` impersonation header — requires **both** `ATELIER_AUTH_MODE=dev` and `ATELIER_DEV_UNSAFE=1`, and boot refuses it if the process looks reachable (non-loopback `ATELIER_BIND`, CF-Access trust, or a live cloudflared). `secure`: required for any exposure — the only mode that trusts the Cloudflare Access header, allows non-loopback bind, and sets `Secure` cookies. Unknown values resolve to `secure`. |
 | `ATELIER_TRUST_CF_ACCESS` | unset | When `true`, accept the `Cf-Access-Authenticated-User-Email` header as identity. |
 | `ATELIER_BASE_URL` | derived from request | Override if your reverse proxy mangles `Host`/`Origin`. Used only for magic-link URL emission. |
 

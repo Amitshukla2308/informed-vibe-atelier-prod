@@ -30,6 +30,10 @@ export function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  // Bootstrap-window gate: revealed only when the backend answers 403 with
+  // bootstrap_token_required (reachable install with 0 users).
+  const [needsBootstrapToken, setNeedsBootstrapToken] = useState(false);
+  const [bootstrapToken, setBootstrapToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -117,10 +121,12 @@ export function SignIn() {
           email: email.trim(),
           password: password.trim(),
           display_name: displayName.trim(),
+          ...(bootstrapToken.trim() ? { bootstrap_token: bootstrapToken.trim() } : {}),
         }),
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) {
+        if (data?.bootstrap_token_required) setNeedsBootstrapToken(true);
         setError(data?.error ?? `Request failed (${r.status}).`);
         setBusy(false);
         return;
@@ -345,6 +351,12 @@ export function SignIn() {
               Choose a password
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} style={inputStyle} placeholder="at least 8 characters" />
             </label>
+            {needsBootstrapToken && (
+              <label style={labelStyle}>
+                First-run token
+                <input type="text" value={bootstrapToken} onChange={e => setBootstrapToken(e.target.value)} required style={inputStyle} placeholder="bt_… (printed at backend start · data/.bootstrap-token)" />
+              </label>
+            )}
             {error && <FormError error={error} hint={hint} />}
             <button type="submit" className="lp-cta-primary" disabled={busy} style={{ justifyContent: "center", marginTop: 4 }}>
               <span>{busy

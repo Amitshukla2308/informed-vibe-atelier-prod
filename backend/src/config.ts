@@ -53,6 +53,9 @@ export function loadAgentConfig(): AgentConfig {
 export const config = {
   atelierRoot: ATELIER_ROOT,
   port: Number(process.env.ATELIER_PORT ?? 3001),
+  /** Bind address. Loopback by default — exposure is the tunnel's job, and
+   *  boot validation refuses a non-loopback bind outside secure mode. */
+  bindHost: process.env.ATELIER_BIND ?? "127.0.0.1",
   baseUrl: process.env.ATELIER_BASE_URL ?? `http://localhost:${process.env.ATELIER_PORT ?? 3001}`,
   // Provider binary paths — symmetrical across CLI providers. Atelier resolves
   // a provider's binary from this map keyed by provider id; the per-agent

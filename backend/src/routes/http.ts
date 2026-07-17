@@ -56,14 +56,14 @@ import { inspectOmnigraphBrain } from "~/session/inspect-omnigraph-brain";
 import { omnigraphStatus, readAgentConstraints } from "~/omnigraph/status";
 
 function json(body: unknown, status = 200): Response {
+  // No CORS headers here. withCorsHeaders() in index.ts is the single source
+  // of truth — it echoes the Origin only for allowlisted origins and adds
+  // Allow-Credentials. The hardcoded `Access-Control-Allow-Origin: *` that
+  // used to live here leaked on every response whose Origin wasn't on the
+  // allowlist (and is spec-incompatible with credentialed requests anyway).
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
+    headers: { "Content-Type": "application/json" },
   });
 }
 

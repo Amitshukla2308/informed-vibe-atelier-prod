@@ -8,6 +8,7 @@ import { existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { config } from "~/config";
 import { loadOmnigraphBrain, brainLayerFlagsFromEnv } from "~/session/load-omnigraph-brain";
+import { authMode, isLoopbackHost, devModeRequestedButIncomplete } from "~/auth/mode";
 
 interface Check {
   name: string;
@@ -117,6 +118,41 @@ const checks: Check[] = [
       } catch (e) {
         return `config.yaml parse failed: ${e}`;
       }
+    },
+  },
+  {
+    // Fail-closed exposure coherence (ADR-001 step 1 / QA 2026-07-17 P0-3).
+    // dev impersonation must be structurally unreachable: refuse boot when
+    // dev mode coexists with ANY sign of reachability. Keyed off RUNTIME
+    // state (live cloudflared process, actual bind, actual env) — never off
+    // repo-shipped config templates, which would brick clean clones.
+    name: "Auth mode / exposure coherence",
+    run: () => {
+      const mode = authMode();
+      const bind = config.bindHost;
+      const cfTrust = process.env.ATELIER_TRUST_CF_ACCESS === "true";
+      let tunnelLive = false;
+      try {
+        execSync("pgrep -x cloudflared", { stdio: "pipe" });
+        tunnelLive = true;
+      } catch { /* not running — the normal case */ }
+
+      if (devModeRequestedButIncomplete()) {
+        console.warn("  ⚠ ATELIER_AUTH_MODE=dev without ATELIER_DEV_UNSAFE=1 — running as 'local' (no impersonation).");
+      }
+
+      const problems: string[] = [];
+      if (!isLoopbackHost(bind) && mode !== "secure") {
+        problems.push(`ATELIER_BIND=${bind} is non-loopback — requires ATELIER_AUTH_MODE=secure`);
+      }
+      if (cfTrust && mode !== "secure") {
+        problems.push("ATELIER_TRUST_CF_ACCESS=true requires ATELIER_AUTH_MODE=secure");
+      }
+      if (mode === "dev" && (cfTrust || tunnelLive || !isLoopbackHost(bind))) {
+        const why = tunnelLive ? "cloudflared is running" : cfTrust ? "CF-Access trust is on" : `bind is ${bind}`;
+        problems.push(`dev mode refused: ${why} — impersonation must never be reachable. Unset ATELIER_AUTH_MODE/ATELIER_DEV_UNSAFE or stop the tunnel.`);
+      }
+      return problems.length ? problems.join("\n  ") : null;
     },
   },
   {

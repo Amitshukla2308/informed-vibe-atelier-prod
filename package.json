@@ -15,7 +15,7 @@
   },
   "scripts": {
     "dev": "bun run dev:backend & bun run dev:frontend",
-    "dev:backend": "cd backend && bun --watch src/index.ts",
+    "dev:backend": "cd backend && ATELIER_AUTH_MODE=dev ATELIER_DEV_UNSAFE=1 bun --watch src/index.ts",
     "dev:frontend": "cd frontend && npm run dev",
     "start": "bun run start:backend & bun run start:frontend",
     "start:backend": "cd backend && bun src/index.ts",

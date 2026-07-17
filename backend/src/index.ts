@@ -17,6 +17,7 @@ import { startReflectionWorker } from "~/session/reflection-worker";
 import { startImplementerAutoPoller } from "~/implementer/auto-poller";
 import { startDrafterAutoPoller } from "~/agent/drafter-background";
 import { getDb } from "~/db";
+import { ensureBootstrapToken } from "~/auth/bootstrap";
 import { runLegacyMigration, backfillProjectsFromDisk } from "~/db/migrate";
 import { getAuthContext } from "~/auth/middleware";
 
@@ -40,6 +41,13 @@ if (migration.ran) {
 const projectsBackfill = backfillProjectsFromDisk();
 if (projectsBackfill.added > 0) {
   console.log(`✓ Projects backfill: added ${projectsBackfill.added} on-disk project(s) to DB`);
+}
+
+// Bootstrap-window protection: while 0 users exist, keep a one-time token
+// that gates first-admin creation on reachable installs (auth/bootstrap.ts).
+{
+  const userCount = (getDb().query(`SELECT COUNT(*) AS c FROM users`).get() as { c: number }).c;
+  ensureBootstrapToken(userCount);
 }
 
 /**
@@ -120,8 +128,13 @@ function closeProxyBridge(ws: import("bun").ServerWebSocket<ProxyWsData>) {
 
 function withCorsHeaders(resp: Response, req: Request): Response {
   const origin = allowedOrigin(req.headers.get("origin"));
-  if (!origin) return resp; // no origin or disallowed — no CORS added
   const headers = new Headers(resp.headers);
+  // Baseline security headers on every response. SAMEORIGIN is safe for the
+  // ttyd terminal iframe — it's reverse-proxied through this same origin.
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "SAMEORIGIN");
+  headers.set("Referrer-Policy", "no-referrer");
+  if (!origin) return new Response(resp.body, { status: resp.status, headers }); // no/disallowed origin — no CORS, but keep security headers
   headers.set("Access-Control-Allow-Origin", origin);
   headers.set("Access-Control-Allow-Credentials", "true");
   headers.set("Vary", "Origin");
@@ -130,6 +143,7 @@ function withCorsHeaders(resp: Response, req: Request): Response {
 
 const server = Bun.serve<WsData>({
   port: config.port,
+  hostname: config.bindHost,
   async fetch(req, server) {
     const url = new URL(req.url);
 
