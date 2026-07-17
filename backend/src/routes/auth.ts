@@ -16,7 +16,40 @@ import { ensureUserHome, userClaudeConfigPath, userClaudeCredentialsPath, isClau
 import { sendMagicLink, sendPasswordResetLink, isMailerConfigured } from "~/lib/mailer";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const ACCESS_TOKEN_MAX_AGE_DAYS = 30;
+const ACCESS_TOKEN_MAX_AGE_DAYS = 90; // matches the absolute token lifetime cap (auth/middleware.ts)
+
+/**
+ * Fixed-window in-memory rate limiter for unauthenticated auth endpoints.
+ * Not distributed (single process by design); Cloudflare adds its own layer
+ * in front when exposed. Keyed by client IP with a per-minute window.
+ */
+const RL_WINDOW_MS = 60_000;
+const RL_MAX = 10;
+const rlBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function clientIp(req: Request): string {
+  return (
+    req.headers.get("cf-connecting-ip") ||
+    (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() ||
+    "local"
+  );
+}
+
+/** Returns true if the caller is over the limit (and should be 429'd). */
+function rateLimited(req: Request, bucketKey: string): boolean {
+  const key = `${bucketKey}:${clientIp(req)}`;
+  const now = Date.now();
+  const b = rlBuckets.get(key);
+  if (!b || now > b.resetAt) {
+    rlBuckets.set(key, { count: 1, resetAt: now + RL_WINDOW_MS });
+    if (rlBuckets.size > 5000) { // opportunistic sweep of expired buckets
+      for (const [k, v] of rlBuckets) if (now > v.resetAt) rlBuckets.delete(k);
+    }
+    return false;
+  }
+  b.count += 1;
+  return b.count > RL_MAX;
+}
 const MAGIC_LINK_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -26,17 +59,28 @@ const json = (body: unknown, status = 200, extraHeaders: Record<string, string> 
     headers: { "content-type": "application/json", ...extraHeaders },
   });
 
+// In secure mode the cookie is Secure + carries the __Host- prefix (which the
+// browser enforces: Secure, Path=/, no Domain — immune to subdomain planting).
+// Plain-HTTP loopback (local/dev) can't use Secure/__Host-, so it keeps the
+// bare name. Max-Age matches the token's absolute lifetime cap (90d).
+const COOKIE_NAME = () => (authMode() === "secure" ? "__Host-atelier_at" : "atelier_at");
+
 function buildCookie(rawToken: string): string {
-  // httpOnly, SameSite=Lax (works across tunnel hostname), 30-day max-age.
   const maxAge = ACCESS_TOKEN_MAX_AGE_DAYS * 24 * 60 * 60;
-  // Secure only in secure mode: local/dev serve plain HTTP on loopback, where
-  // a Secure cookie would simply be dropped by the browser and break login.
   const secure = authMode() === "secure" ? " Secure;" : "";
-  return `atelier_at=${encodeURIComponent(rawToken)}; Path=/; HttpOnly;${secure} SameSite=Lax; Max-Age=${maxAge}`;
+  return `${COOKIE_NAME()}=${encodeURIComponent(rawToken)}; Path=/; HttpOnly;${secure} SameSite=Lax; Max-Age=${maxAge}`;
 }
 
 function clearCookie(): string {
-  return `atelier_at=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  // Clear both possible names so a mode switch can't leave a stale cookie.
+  const secure = authMode() === "secure" ? " Secure;" : "";
+  return `${COOKIE_NAME()}=; Path=/; HttpOnly;${secure} SameSite=Lax; Max-Age=0`;
+}
+
+/** The raw access token from the request cookie (either name), or null. */
+function extractRawCookieToken(req: Request): string | null {
+  const m = (req.headers.get("cookie") ?? "").match(/(?:^|;\s*)(?:__Host-)?atelier_at=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 export async function handleAuthRoutes(req: Request, url: URL, path: string): Promise<Response | null> {
@@ -64,7 +108,7 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
   // POST /logout — revoke current access token
   if (path === "/logout" && req.method === "POST") {
     const cookie = req.headers.get("cookie") ?? "";
-    const m = cookie.match(/(?:^|;\s*)atelier_at=([^;]+)/);
+    const m = cookie.match(/(?:^|;\s*)(?:__Host-)?atelier_at=([^;]+)/);
     if (m) {
       const raw = decodeURIComponent(m[1]);
       const hash = hashToken(raw);
@@ -73,6 +117,51 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
       ).run(nowIso(), hash);
     }
     return json({ ok: true }, 200, { "set-cookie": clearCookie() });
+  }
+
+  // GET /me/sessions — the caller's own active login sessions (for self-service
+  // revocation of a lost/other device). Token hashes are never returned; a
+  // short opaque id (first 12 hex of the hash) identifies each row for revoke.
+  if (path === "/me/sessions" && req.method === "GET") {
+    const ctx = getAuthContext(req);
+    if (!ctx) return json({ error: "unauthenticated" }, 401);
+    const rows = getDb().query(
+      `SELECT token_hash, created_at, last_used_at, user_agent
+         FROM access_tokens
+        WHERE user_id = ? AND revoked_at IS NULL
+        ORDER BY COALESCE(last_used_at, created_at) DESC`
+    ).all(ctx.user.id) as Array<{ token_hash: string; created_at: string; last_used_at: string | null; user_agent: string | null }>;
+    const current = (() => {
+      const raw = extractRawCookieToken(req);
+      return raw ? hashToken(raw) : null;
+    })();
+    return json({
+      sessions: rows.map(r => ({
+        id: r.token_hash.slice(0, 12),
+        created_at: r.created_at,
+        last_used_at: r.last_used_at,
+        user_agent: r.user_agent,
+        current: r.token_hash === current,
+      })),
+    });
+  }
+
+  // POST /me/sessions/revoke {id} — revoke one of the caller's own sessions.
+  if (path === "/me/sessions/revoke" && req.method === "POST") {
+    const ctx = getAuthContext(req);
+    if (!ctx) return json({ error: "unauthenticated" }, 401);
+    const body = (await req.json().catch(() => ({}))) as { id?: string };
+    const id = (body.id ?? "").trim();
+    if (!id || !/^[0-9a-f]{6,64}$/.test(id)) return json({ error: "valid session id required" }, 400);
+    const res = getDb().query(
+      `UPDATE access_tokens SET revoked_at = ?
+        WHERE user_id = ? AND revoked_at IS NULL AND substr(token_hash, 1, ?) = ?`
+    ).run(nowIso(), ctx.user.id, id.length, id);
+    getDb().query(
+      `INSERT INTO audit_log (id, user_id, action, target_type, target_id, details_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(newId(), ctx.user.id, "session.revoke", "access_token", id, "{}", nowIso());
+    return json({ ok: true, revoked: res.changes });
   }
 
   // ── Email + password auth ──────────────────────────────────────────────────
@@ -85,6 +174,7 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
   // Magic-link sign-in stays as a passwordless alternative for known users.
 
   if (path === "/auth/register" && req.method === "POST") {
+    if (rateLimited(req, "register")) return json({ error: "too many attempts — wait a minute" }, 429);
     const body = (await req.json().catch(() => ({}))) as {
       email?: string;
       password?: string;
@@ -244,6 +334,18 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
 
     const newHash = await Bun.password.hash(newPwd, "argon2id");
     db.query(`UPDATE users SET password_hash = ? WHERE id = ?`).run(newHash, ctx.user.id);
+    // Revoke every OTHER session on password change — a changed password should
+    // log out any device that had the old one. The caller's current session
+    // stays live (re-issued cookie) so they aren't logged out of the tab they
+    // just used to change it.
+    const currentHash = (() => { const raw = extractRawCookieToken(req); return raw ? hashToken(raw) : null; })();
+    if (currentHash) {
+      db.query(`UPDATE access_tokens SET revoked_at = ? WHERE user_id = ? AND token_hash != ? AND revoked_at IS NULL`)
+        .run(nowIso(), ctx.user.id, currentHash);
+    } else {
+      db.query(`UPDATE access_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL`)
+        .run(nowIso(), ctx.user.id);
+    }
     db.query(
       `INSERT INTO audit_log (id, user_id, action, target_type, target_id, details_json, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -301,6 +403,7 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
   }
 
   if (path === "/auth/login" && req.method === "POST") {
+    if (rateLimited(req, "login")) return json({ error: "too many attempts — wait a minute" }, 429);
     const body = (await req.json().catch(() => ({}))) as { email?: string; password?: string };
     const email = (body.email ?? "").trim().toLowerCase();
     // Trim password too. Whitespace from copy-paste (especially leading spaces
@@ -444,6 +547,7 @@ export async function handleAuthRoutes(req: Request, url: URL, path: string): Pr
   // Delivery: there's no SMTP yet, so the link is printed to the host log
   // AND appended to data/magic-links.txt (mode 0600). The host forwards it.
   if (path === "/auth/magic-link/request" && req.method === "POST") {
+    if (rateLimited(req, "magic")) return json({ error: "too many attempts — wait a minute" }, 429);
     const body = (await req.json().catch(() => ({}))) as { email?: string };
     const email = (body.email ?? "").trim().toLowerCase();
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {

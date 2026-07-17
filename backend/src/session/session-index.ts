@@ -37,6 +37,11 @@ export interface SessionEntry {
   provider?: AgentProviderId;
   /** True if the provider's structured JSONL is present on disk. */
   hasStructuredLog?: boolean;
+  /** False-done detector: the session produced NO capture (no structured JSONL
+   *  and an empty/absent raw.log) despite existing. A session dir with
+   *  captured === false is the canonical "looks done, actually empty" signal —
+   *  what a 0-byte raw.log used to mean before the v2 terminal engine. */
+  captured?: boolean;
 }
 
 interface SessionMeta {
@@ -341,6 +346,7 @@ export async function listProjectSessions(project: string): Promise<SessionEntry
       firstUserLine: e.firstUserLine,
       provider: e.provider,
       hasStructuredLog: e.hasStructuredLog,
+      captured: !!e.hasStructuredLog || e.rawBytes > 0,
     };
   });
 

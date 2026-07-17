@@ -18,6 +18,10 @@
 import { getDb, hashToken, nowIso } from "~/db";
 import { authMode, devImpersonationEnabled } from "~/auth/mode";
 
+/** Access-token lifetime caps. Absolute from creation; idle from last use. */
+export const ABSOLUTE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+export const IDLE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 export interface AuthUser {
   id: string;
   display_name: string;
@@ -49,9 +53,10 @@ function extractToken(req: Request): string | null {
   const auth = req.headers.get("authorization");
   if (auth?.startsWith("Bearer ")) return auth.slice(7).trim();
 
-  // Cookie fallback (browser)
+  // Cookie fallback (browser). Secure mode uses the __Host- prefixed name;
+  // check both so a mode switch doesn't strand a live session mid-cookie.
   const cookie = req.headers.get("cookie") ?? "";
-  const match = cookie.match(/(?:^|;\s*)atelier_at=([^;]+)/);
+  const match = cookie.match(/(?:^|;\s*)(?:__Host-)?atelier_at=([^;]+)/);
   if (match) return decodeURIComponent(match[1]);
 
   return null;
@@ -125,9 +130,25 @@ export function getAuthContext(req: Request): AuthContext | null {
   const hash = hashToken(token);
   const db = getDb();
   const row = db.query(
-    `SELECT user_id, revoked_at FROM access_tokens WHERE token_hash = ?`
-  ).get(hash) as { user_id: string; revoked_at: string | null } | undefined;
+    `SELECT user_id, revoked_at, created_at, last_used_at FROM access_tokens WHERE token_hash = ?`
+  ).get(hash) as { user_id: string; revoked_at: string | null; created_at: string | null; last_used_at: string | null } | undefined;
   if (!row || row.revoked_at) return null;
+
+  // Token lifetime: 90-day absolute cap (from creation) + 30-day idle cap
+  // (from last use). A stolen-but-idle token dies on its own; an actively
+  // abused one still can't outlive the absolute cap. Expired tokens are
+  // revoked in place so they stop being probed.
+  const now = Date.now();
+  const createdMs = row.created_at ? Date.parse(row.created_at) : now;
+  const lastUsedMs = row.last_used_at ? Date.parse(row.last_used_at) : createdMs;
+  const expired =
+    (Number.isFinite(createdMs) && now - createdMs > ABSOLUTE_TTL_MS) ||
+    (Number.isFinite(lastUsedMs) && now - lastUsedMs > IDLE_TTL_MS);
+  if (expired) {
+    db.query(`UPDATE access_tokens SET revoked_at = ? WHERE token_hash = ? AND revoked_at IS NULL`)
+      .run(nowIso(), hash);
+    return null;
+  }
 
   // update last_used_at (fire-and-forget)
   db.query(
