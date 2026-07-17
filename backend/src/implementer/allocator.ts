@@ -15,6 +15,7 @@
 
 import type { NodeContext, AllocationResult, LedgerEntry } from "./types";
 import { appendLedger } from "./ledger";
+import { isQwenImplementer, resolveImplementerProvider } from "./provider-select";
 import { recordVerifierUnverified } from "~/project/canvas-comments";
 
 const LM_STUDIO_BASE_URL = process.env.QWEN_BASE_URL ?? "http://localhost:1234/v1";
@@ -143,6 +144,25 @@ export async function allocate(ctx: NodeContext): Promise<AllocationResult> {
         `Tasks proposed by Drafter must contain a non-empty \`## ${cleanLabel}\` section before being marked proposed.`,
       );
     }
+    return result;
+  }
+
+  // Provider gate. The LLM classification below asks "can the weak local Qwen
+  // handle this, or hand back?" — a qwen-specific concern that also depends on
+  // LM Studio being up. For a high-fidelity provider (e.g. Claude) the gate is
+  // both unnecessary and unreachable, so once the exact pre-LLM guards above
+  // pass, treat the node as runnable and skip the LM Studio call.
+  if (!isQwenImplementer(ctx.userId)) {
+    const elapsed_s = (Date.now() - t0) / 1000;
+    const result: AllocationResult = {
+      verdict: "qwen", // "qwen" = runnable-by-implementer (verdict name predates multi-provider)
+      reason: `implementer provider is ${resolveImplementerProvider(ctx.userId)} — allocator LLM gate skipped`,
+      confidence: 1.0,
+      elapsed_s,
+      tokens_in: 0,
+      tokens_out: 0,
+    };
+    logAllocator(ctx.nodeId, result, 0, "provider-skip");
     return result;
   }
 

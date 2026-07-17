@@ -20,10 +20,12 @@ import { config } from "~/config";
 
 import { allocate } from "./allocator";
 import { runQwenCode } from "./providers/qwen-code";
+import { runClaudeCode } from "./providers/claude";
+import { resolveImplementerProvider } from "./provider-select";
 import { createSandbox, diffAgainstBase, commitOrSnapshot, tscOk, type SandboxHandle, type CommitResult } from "./branch";
 import { appendLedger, ledgerPathFor } from "./ledger";
 import { broadcastImplementerEvent } from "~/ws/implementer-events";
-import type { ImplementerResult, NodeContext, LedgerEntry, AllocationResult } from "./types";
+import type { ImplementerResult, NodeContext, LedgerEntry, AllocationResult, QwenCodeRunResult } from "./types";
 import { violationsFor } from "./coherence";
 import { scanGuardians } from "~/guardians/engine";
 import { buildDerivation, renderDerivationForPrompt } from "./derivation";
@@ -102,6 +104,34 @@ function pathsOutsideAllowed(relPaths: string[], allowedGlobs: string[]): string
 function readImplementerPrinciple(): string {
   const p = resolve(ATELIER_ROOT, "agents", "principles", "implementer.md");
   return existsSync(p) ? readFileSync(p, "utf-8") : "# Implementer Principles\n_(missing)_\n";
+}
+
+/** Dispatch a headless implementer run to the resolved provider. */
+async function runImplementer(
+  provider: string,
+  opts: { cwd: string; prompt: string; timeoutMs?: number; userId?: string; principlePath?: string },
+): Promise<QwenCodeRunResult> {
+  if (provider === "claude") {
+    return runClaudeCode({
+      cwd: opts.cwd,
+      prompt: opts.prompt,
+      timeoutMs: opts.timeoutMs,
+      systemPromptPath: opts.principlePath,
+      userId: opts.userId ?? null,
+    });
+  }
+  // qwen-code (and any unrecognized value) → local qwen path
+  return runQwenCode({ cwd: opts.cwd, prompt: opts.prompt, timeoutMs: opts.timeoutMs });
+}
+
+/** Write the implementer principle to a temp file for Claude's
+ *  --append-system-prompt-file (Claude ignores QWEN.md). Returns the path. */
+function writePrincipleForClaude(sessionKey: string): string {
+  const tmpDir = resolve(config.dataDir, "tmp");
+  mkdirSync(tmpDir, { recursive: true });
+  const p = resolve(tmpDir, `implementer_principle_${sessionKey}.md`);
+  writeFileSync(p, readImplementerPrinciple(), "utf-8");
+  return p;
 }
 
 function copyPrincipleAsQwenMd(worktreeRoot: string): void {
@@ -454,6 +484,7 @@ export async function runImplementerOnce(opts: RunOptions): Promise<ImplementerR
       surface_status: s.surface_status ?? null,
     })),
     derivation,
+    userId: opts.userId,
   };
 
   // Mark in-progress immediately so concurrent runs are visible.
@@ -595,17 +626,24 @@ export async function runImplementerOnce(opts: RunOptions): Promise<ImplementerR
     planned_artifacts: plannedArtifactsForPrompt.length,
   });
 
-  let runResult: Awaited<ReturnType<typeof runQwenCode>>;
+  const provider = resolveImplementerProvider(opts.userId);
+  // Claude ignores QWEN.md, so hand it the principle via --append-system-prompt-file.
+  const principlePath = provider === "claude" ? writePrincipleForClaude(nodeId) : undefined;
+  console.log(`[implementer] node ${nodeId.slice(0, 8)} → provider=${provider}`);
+
+  let runResult: QwenCodeRunResult;
   let attempt = 1;
   try {
-    runResult = await runQwenCode({
+    runResult = await runImplementer(provider, {
       cwd: handle.path,
       prompt,
       timeoutMs: opts.timeoutMs,
+      userId: opts.userId,
+      principlePath,
     });
 
-    // Pre-flight check: did write_file actually get invoked for missing
-    // artifacts? If not, immediately re-run with an unambiguous corrective.
+    // Pre-flight check: did a write actually happen for missing artifacts?
+    // If not, immediately re-run with an unambiguous corrective.
     const stillMissing = plannedArtifactsForPrompt.filter(
       (rel) => !existsSync(resolve(handle.path, rel)),
     );
@@ -615,10 +653,12 @@ export async function runImplementerOnce(opts: RunOptions): Promise<ImplementerR
         `[implementer] retry: ${stillMissing.length}/${plannedArtifactsForPrompt.length} planned artifacts missing after attempt 1`,
       );
       const retryPrompt = buildRetryPrompt(ctx, stillMissing);
-      runResult = await runQwenCode({
+      runResult = await runImplementer(provider, {
         cwd: handle.path,
         prompt: retryPrompt,
         timeoutMs: opts.timeoutMs,
+        userId: opts.userId,
+        principlePath,
       });
     }
   } catch (e) {

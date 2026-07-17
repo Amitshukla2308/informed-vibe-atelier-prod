@@ -54,6 +54,8 @@ export interface NodeContext {
   touchedSurfaces?: { id: string; title: string; surface_kind?: string | null; surface_status?: string | null }[];
   /** A2.2: chain of derivation up to Project + adjacent Decisions/Risks. */
   derivation?: DerivationContext | null;
+  /** Founder whose agent config / auth this run uses (provider selection). */
+  userId?: string;
 }
 
 export interface QwenCodeRunResult {
