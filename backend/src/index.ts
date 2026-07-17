@@ -130,6 +130,7 @@ function withCorsHeaders(resp: Response, req: Request): Response {
 
 const server = Bun.serve<WsData>({
   port: config.port,
+  hostname: config.bindHost,
   async fetch(req, server) {
     const url = new URL(req.url);
 

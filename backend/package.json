@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "ATELIER_AUTH_MODE=dev ATELIER_DEV_UNSAFE=1 bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "validate": "bun src/boot/validate.ts"
   },

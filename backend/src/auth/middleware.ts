@@ -3,16 +3,20 @@
  * hashes, looks up in access_tokens, loads user + memberships, returns an
  * AuthContext the route handler can use.
  *
- * Two modes:
- *   - production: strict. No token → 401.
- *   - dev (ATELIER_AUTH_MODE=dev): if request carries ?dev_as=<user_id>
- *     OR header x-atelier-dev-as: <user_id>, skip token check and act as
- *     that user. Useful for iterating locally without running the tunnel.
+ * Three modes (see auth/mode.ts — fail-closed, "local" when unset):
+ *   - local (default): strict pattern-γ auth. No token → 401. No impersonation.
+ *   - dev (ATELIER_AUTH_MODE=dev + ATELIER_DEV_UNSAFE=1): header
+ *     x-atelier-dev-as: <user_id> skips the token check and acts as that
+ *     user. Loopback-only by construction (boot validation refuses dev on
+ *     any reachable configuration). Query-param form removed.
+ *   - secure: strict auth; additionally the only mode in which the
+ *     Cloudflare Access header is trusted and non-loopback bind is allowed.
  *
  * Routes opt in by calling getAuthContext(req) / requireAuth(req).
  */
 
 import { getDb, hashToken, nowIso } from "~/db";
+import { authMode, devImpersonationEnabled } from "~/auth/mode";
 
 export interface AuthUser {
   id: string;
@@ -37,7 +41,7 @@ export interface AuthContext {
 }
 
 function isDevMode(): boolean {
-  return (process.env.ATELIER_AUTH_MODE ?? "dev") === "dev";
+  return devImpersonationEnabled();
 }
 
 function extractToken(req: Request): string | null {
@@ -55,9 +59,8 @@ function extractToken(req: Request): string | null {
 
 function extractDevAs(req: Request): string | null {
   if (!isDevMode()) return null;
-  const url = new URL(req.url);
-  const q = url.searchParams.get("dev_as");
-  if (q) return q;
+  // Header only. The old ?dev_as=<user_id> query form leaked user ids into
+  // logs/history and made the bypass linkable; removed 2026-07-17.
   return req.headers.get("x-atelier-dev-as");
 }
 
@@ -102,8 +105,10 @@ export function getAuthContext(req: Request): AuthContext | null {
   const devAs = extractDevAs(req);
   if (devAs) return loadContext(devAs);
 
-  // 2. Cloudflare Access — opt-in via env flag.
-  if (process.env.ATELIER_TRUST_CF_ACCESS === "true") {
+  // 2. Cloudflare Access — opt-in via env flag, honored ONLY in secure mode.
+  // Trusting an email header in local/dev would let anything that can reach
+  // the port mint identities with one forged header.
+  if (process.env.ATELIER_TRUST_CF_ACCESS === "true" && authMode() === "secure") {
     const cfEmail = req.headers.get("cf-access-authenticated-user-email");
     if (cfEmail) {
       const db = getDb();

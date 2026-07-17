@@ -10,6 +10,7 @@ import { existsSync, writeFileSync, unlinkSync, chmodSync, statSync, appendFileS
 import { resolve as pathResolve } from "node:path";
 import { getDb, hashToken, newId, nowIso, randomToken } from "~/db";
 import { getAuthContext, requireAuth, requireAdmin } from "~/auth/middleware";
+import { authMode } from "~/auth/mode";
 import { ensureUserHome, userClaudeConfigPath, userClaudeCredentialsPath, isClaudeLinked } from "~/auth/user-home";
 import { sendMagicLink, sendPasswordResetLink, isMailerConfigured } from "~/lib/mailer";
 
@@ -27,7 +28,9 @@ const json = (body: unknown, status = 200, extraHeaders: Record<string, string> 
 function buildCookie(rawToken: string): string {
   // httpOnly, SameSite=Lax (works across tunnel hostname), 30-day max-age.
   const maxAge = ACCESS_TOKEN_MAX_AGE_DAYS * 24 * 60 * 60;
-  const secure = (process.env.ATELIER_AUTH_MODE ?? "dev") !== "dev" ? " Secure;" : "";
+  // Secure only in secure mode: local/dev serve plain HTTP on loopback, where
+  // a Secure cookie would simply be dropped by the browser and break login.
+  const secure = authMode() === "secure" ? " Secure;" : "";
   return `atelier_at=${encodeURIComponent(rawToken)}; Path=/; HttpOnly;${secure} SameSite=Lax; Max-Age=${maxAge}`;
 }
 
