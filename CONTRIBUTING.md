@@ -76,7 +76,7 @@ Run `--skip-smoke` for every change. Run the full check (without `--skip-smoke`)
 
 The §5 smoke builds a clean container with no host credentials, clones the repo, boots the app, and asserts that the PTY produces a non-empty `raw.log`. "Boot checks passed on my machine" is not sufficient if you already have ttyd and a logged-in provider installed — the smoke is the canonical gate.
 
-The check also runs a secret and PII scan (§1). Do not commit `.env` files, private keys, or personal data. The scan catches `sk-ant-…`, `ghp_…`, `AKIA…`, private-key headers, and local paths like `/home/<you>/`.
+The check also runs a secret and PII scan (§1). Do not commit `.env` files, private keys, or personal data. The scan catches Anthropic API keys, GitHub personal access tokens, AWS access key IDs, private-key headers, and local paths like `/home/<you>/`.
 
 ---
 
