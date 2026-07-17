@@ -17,6 +17,7 @@ import { startReflectionWorker } from "~/session/reflection-worker";
 import { startImplementerAutoPoller } from "~/implementer/auto-poller";
 import { startDrafterAutoPoller } from "~/agent/drafter-background";
 import { getDb } from "~/db";
+import { ensureBootstrapToken } from "~/auth/bootstrap";
 import { runLegacyMigration, backfillProjectsFromDisk } from "~/db/migrate";
 import { getAuthContext } from "~/auth/middleware";
 
@@ -40,6 +41,13 @@ if (migration.ran) {
 const projectsBackfill = backfillProjectsFromDisk();
 if (projectsBackfill.added > 0) {
   console.log(`✓ Projects backfill: added ${projectsBackfill.added} on-disk project(s) to DB`);
+}
+
+// Bootstrap-window protection: while 0 users exist, keep a one-time token
+// that gates first-admin creation on reachable installs (auth/bootstrap.ts).
+{
+  const userCount = (getDb().query(`SELECT COUNT(*) AS c FROM users`).get() as { c: number }).c;
+  ensureBootstrapToken(userCount);
 }
 
 /**
