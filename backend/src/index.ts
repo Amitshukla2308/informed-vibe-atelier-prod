@@ -128,8 +128,13 @@ function closeProxyBridge(ws: import("bun").ServerWebSocket<ProxyWsData>) {
 
 function withCorsHeaders(resp: Response, req: Request): Response {
   const origin = allowedOrigin(req.headers.get("origin"));
-  if (!origin) return resp; // no origin or disallowed — no CORS added
   const headers = new Headers(resp.headers);
+  // Baseline security headers on every response. SAMEORIGIN is safe for the
+  // ttyd terminal iframe — it's reverse-proxied through this same origin.
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "SAMEORIGIN");
+  headers.set("Referrer-Policy", "no-referrer");
+  if (!origin) return new Response(resp.body, { status: resp.status, headers }); // no/disallowed origin — no CORS, but keep security headers
   headers.set("Access-Control-Allow-Origin", origin);
   headers.set("Access-Control-Allow-Credentials", "true");
   headers.set("Vary", "Origin");
