@@ -671,7 +671,8 @@ export async function runImplementerOnce(opts: RunOptions): Promise<ImplementerR
     if (plannedArtifactsForPrompt.length > 0 && stillMissing.length > 0) {
       attempt = 2;
       console.warn(
-        `[implementer] retry: ${stillMissing.length}/${plannedArtifactsForPrompt.length} planned artifacts missing after attempt 1`,
+        `[implementer] retry: ${stillMissing.length}/${plannedArtifactsForPrompt.length} planned artifacts missing after attempt 1 ` +
+        `(exit=${runResult.exit_code} tools=${runResult.tools_called}) — attempt-1 response head: ${String(runResult.response).slice(0, 300).replace(/\n/g, " ")}`,
       );
       const retryPrompt = adaptPromptForProvider(buildRetryPrompt(ctx, stillMissing), provider);
       runResult = await runImplementer(provider, {
