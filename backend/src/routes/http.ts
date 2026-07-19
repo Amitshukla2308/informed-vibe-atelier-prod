@@ -18,7 +18,7 @@
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
 import { resolve, extname, basename } from "node:path";
 import YAML from "yaml";
-import { config } from "~/config";
+import { config, loadAgentConfig } from "~/config";
 import { scaffoldProject, projectMeta } from "~/project/scaffold";
 import { getGraph, proposeNode, proposeEdge, updateNodeMeta, updateNodePlan, deleteNode, getNode, type NodeKind, type NodeState, type NodeBadge, type NodeMeta } from "~/project/canvas";
 import { recordNodeEvent, postAgentComment } from "~/project/canvas-comments";
@@ -214,9 +214,20 @@ export async function handleHttp(req: Request): Promise<Response> {
       });
     }
 
-    const agentCfg = config.agent as typeof config.agent & { logged_out?: boolean };
+    // Read config FRESH — config.agent is cached at import, so a config.yaml
+    // edit (project switch, onboarding write, an operator fix) wouldn't be
+    // reflected until a backend restart, which silently strands the founder
+    // on onboarding. loadAgentConfig() re-reads the file each poll (cheap).
+    const agentCfg = loadAgentConfig() as typeof config.agent & { logged_out?: boolean };
     const hasAgentConfig = !!agentCfg.agent_name && !!agentCfg.active_project;
-    const projectExists = hasAgentConfig && !!projectMeta(agentCfg.active_project);
+    const activeProjectValid = hasAgentConfig && !!projectMeta(agentCfg.active_project);
+    // "Broken active project" (identity set, but active_project has no project
+    // meta) is distinct from "never onboarded". Log it loudly so a metaless
+    // active_project doesn't just silently masquerade as unconfigured.
+    if (hasAgentConfig && !activeProjectValid) {
+      console.warn(`[onboarding/state] active_project "${agentCfg.active_project}" has no project meta.json — treated as unconfigured. Switch to a valid project.`);
+    }
+    const projectExists = activeProjectValid;
     const loggedOut = !!agentCfg.logged_out;
     const configured = hasAgentConfig && projectExists && !loggedOut;
     const pickupFlavor = configured

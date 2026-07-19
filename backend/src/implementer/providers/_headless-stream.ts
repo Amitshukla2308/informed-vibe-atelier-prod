@@ -46,7 +46,14 @@ export function runStreamingCoder(opts: StreamingCoderOptions): Promise<QwenCode
   const { bin, args, env, cwd, timeoutMs, writeToolNames, label } = opts;
 
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(bin, args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
+    // detached: true puts the coder in its own session/process group so a
+    // SIGHUP delivered to the backend's group (the WSL "background process
+    // gets hung up" demon) can't reach it. Without this the first Claude run
+    // is killed mid-flight (exit 129 = SIGHUP) right before it writes files,
+    // forcing a wasted corrective retry. We still await the child and manage
+    // its lifecycle explicitly (SIGTERM/SIGKILL on loop-detect below), and we
+    // do NOT unref it, so the run completes normally.
+    const child = spawn(bin, args, { cwd, env, stdio: ["ignore", "pipe", "pipe"], detached: true });
 
     let stderr = "";
     const events: unknown[] = [];
